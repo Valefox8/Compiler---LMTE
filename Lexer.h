@@ -11,12 +11,12 @@ class Lexer{
         int position;       // current character
 
         Token ReadNumber();     // Pretty self expanitory 
-        Token ReadIdentifierOrKeyword();    // Pretty self expanitory 
+        Token ReadIdOrKey();    // Pretty self expanitory 
 
     public:
         Lexer(std::string source);      // Declares the lexer
         std::vector<Token> Tokenize();      // Tokenizes (returns a vector of tokens)
-}
+};
 
 
 

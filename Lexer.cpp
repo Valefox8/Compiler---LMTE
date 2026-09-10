@@ -1,4 +1,5 @@
 #include "Lexer.h"
+#include <stdexcept>
 
 
 Lexer::Lexer(std::string source)    // constructor 
@@ -30,7 +31,7 @@ std::vector<Token> Lexer::Tokenize(){
         if (std::isalpha(current))
         {
             // Reads token and works out what operator ir is before pushing to vector
-            tokens.push_back(ReadIdentifierOrKeyword());
+            tokens.push_back(ReadIdOrKey());
             continue;
         }
 
