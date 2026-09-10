@@ -7,15 +7,15 @@
 
 class Lexer{
     private:
-        std::string source;
-        int position;
+        std::string source; // Input
+        int position;       // current character
 
-        Token ReadNumber();
-        Token ReadIdentifierOrKeyword();
+        Token ReadNumber();     // Pretty self expanitory 
+        Token ReadIdentifierOrKeyword();    // Pretty self expanitory 
 
     public:
-        Lexer(std::string source);
-        std::vector<Token> Tokenize();
+        Lexer(std::string source);      // Declares the lexer
+        std::vector<Token> Tokenize();      // Tokenizes (returns a vector of tokens)
 }
 
 
