@@ -12,6 +12,8 @@ class Lexer{
 
         Token ReadNumber();     // Pretty self expanitory 
         Token ReadIdOrKey();    // Pretty self expanitory 
+        void Comment();         // Functionality for comments
+        bool checkforward(std::string);     // Checks for string tag
 
     public:
         Lexer(std::string source);      // Declares the lexer

@@ -35,6 +35,12 @@ std::vector<Token> Lexer::Tokenize(){
             continue;
         }
 
+        if (current == '<' && checkforward("<!--"))   // new - check for comment start
+        {
+            Comment();
+            continue;
+        }
+
         if (current == '(')
         {
             // Checks if its a left bracket and pushes
@@ -100,3 +106,29 @@ Token Lexer::ReadIdOrKey()
         // Failsafe to treat as an identifier if it doesnt hit any of the above
         return Token(TokenType::Identifier, value);
     }
+
+
+    void Lexer::Comment(){
+        position += 4;      // Check full "<!--"  
+
+        while (position < (int)source.length() && !checkforward("-->"))   // keep moving until we find "-->"
+        {
+            position++;
+        }
+
+        if (position >= (int)source.length())   // ran out of source before finding "-->"
+        {
+            throw std::runtime_error("lexer failed on comment");
+        }
+
+    position += 3;   // finish the  "-->"
+    }   
+    
+    bool Lexer::checkforward(std::string text){
+    if (position + (int)text.length() > (int)source.length())   // not enough characters left
+        {
+            return false;
+        }
+
+        return source.substr(position, text.length()) == text;   // compare the chunk starting at position
+    }   
