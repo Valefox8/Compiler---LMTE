@@ -80,3 +80,13 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
 
     throw std::runtime_error("Syntax error: unexpected token");
 }
+
+std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
+    std::vector<std::unique_ptr<Expr>> expressions;     // vector of pointer expressions initialised
+    while (Current().Type != TokenType::EndOfFile)      // while not end of file
+    {
+        expressions.push_back(ParseExpression());   // Pushes the parsed expression onto the vector
+    }
+
+    return expressions;     // Return vector of expression ptrs
+}

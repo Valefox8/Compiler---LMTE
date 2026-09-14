@@ -46,18 +46,21 @@ int main()
     // Starts parser using the tokens generated previously
     Parser parser(tokens);
 
-    // Generates parse tree
-    std::unique_ptr<Expr> tree = parser.ParseExpression();
+    // generates the trees for each line of the program
+    std::vector<std::unique_ptr<Expr>> trees = parser.ParseProgram();
 
     // Creates an instance of code generator
     CodeGen generator;
 
-    // Generates the output using the generate
-    std::string output = generator.GenCode(tree.get());
-
     // Print the result and initial string
     std::cout << "Source:    " << source << std::endl;
-    std::cout << "Generated: " << output << std::endl;
+    std::cout << "Generated: " << std::endl;
+
+    for (size_t i = 0; i < trees.size(); i++)   // loop over each tree
+    {
+        std::string output = generator.GenCode(trees[i].get()); // generate code
+        std::cout << output << std::endl;   // print code
+    }
 
     return 0;
 }

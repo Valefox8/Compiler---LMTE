@@ -19,6 +19,7 @@ class Parser{
     public:
     Parser(std::vector<Token> tokens);      // Constructor 
     std::unique_ptr<Expr> ParseExpression();    // Implements the expressions and returns the expression tree
+    std::vector<std::unique_ptr<Expr>> ParseProgram();   // parses for expressions within a program
 };
 
 
