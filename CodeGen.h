@@ -4,7 +4,7 @@
 #include <string>
 #include "Expr.h"
 
-class CodeGenerator
+class CodeGen
 {
 private:
     std::string Operator(TokenType op);
