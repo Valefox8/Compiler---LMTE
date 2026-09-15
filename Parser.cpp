@@ -105,6 +105,22 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
         return ParseExpression();       // Otherwise call expression (arithemtic) for now
     }      
 
-    std::unique_ptr<Expr> Parser::ParseVarDec(){
+    // Follows grammer rule     <VariableDeclaration> ->	<VariableType> Identifier = <Expression>
 
+    std::unique_ptr<Expr> Parser::ParseVarDec(){
+        TokenType varType = Advance().Type;     // Saves the type and moves to next value
+        Token nameToken = Advance();          // saves the name as a token
+        std::string name = nameToken.Value;     // Creates a name string based off the value just found from the token
+
+        Advance();                            // Moves on past the =
+
+        std::unique_ptr<Expr> value;    // initialises the value
+
+        if(varType == TokenType::Vwords){
+            Token lit = Advance();
+            value = std::make_unique<WordExpr>(lit.Value);
+        }
+
+
+        return std::make_unique<VarDecExpr>(varType, name, std::move(value));       // returns the expression created
     }

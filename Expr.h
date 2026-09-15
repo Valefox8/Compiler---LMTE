@@ -91,6 +91,28 @@ public:
     }
 };
 
+class CharacterLiteralExpr : public Expr
+{
+public:
+    std::string Value;   // a single character, e.g. "q"
+
+    CharacterLiteralExpr(std::string value)
+    {
+        Value = value;
+    }
+};
+
+class DigitLiteralExpr : public Expr
+{
+public:
+    std::string Value;   // a single digit, e.g. "5"
+
+    DigitLiteralExpr(std::string value)
+    {
+        Value = value;
+    }
+};
+
 // The bigger fucntion for variable dec
 class VarDecExpr : public Expr{
     public:
