@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include <stdexcept>
+#include "TokenType.h"
 
 
 Parser::Parser(std::vector<Token> tokens){
@@ -82,11 +83,28 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
 }
 
 std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
-    std::vector<std::unique_ptr<Expr>> expressions;     // vector of pointer expressions initialised
-    while (Current().Type != TokenType::EndOfFile)      // while not end of file
+    std::vector<std::unique_ptr<Expr>> statements;
+
+    while (Current().Type != TokenType::EndOfFile)
     {
-        expressions.push_back(ParseExpression());   // Pushes the parsed expression onto the vector
+        statements.push_back(ParseStatement());   // changed from ParseExpression() so we can use statements too
     }
 
-    return expressions;     // Return vector of expression ptrs
+    return statements;
 }
+
+    std::unique_ptr<Expr> Parser::ParseStatement(){
+
+        TokenType current = Current().Type;     // Gets the current token type 
+
+        if (current == TokenType::Vnum || current == TokenType::Vwords || current == TokenType::Vboolean || current == TokenType::Vletter)  // If the token type is a type identifier, call variable declaration
+        {
+            return ParseVarDec();
+        }
+
+        return ParseExpression();       // Otherwise call expression (arithemtic) for now
+    }      
+
+    std::unique_ptr<Expr> Parser::ParseVarDec(){
+
+    }
