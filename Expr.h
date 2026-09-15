@@ -91,23 +91,23 @@ public:
     }
 };
 
-class CharacterLiteralExpr : public Expr
+class CharacterExpr : public Expr
 {
 public:
     std::string Value;   // a single character, e.g. "q"
 
-    CharacterLiteralExpr(std::string value)
+    CharacterExpr(std::string value)
     {
         Value = value;
     }
 };
 
-class DigitLiteralExpr : public Expr
+class DigitExpr : public Expr
 {
 public:
     std::string Value;   // a single digit, e.g. "5"
 
-    DigitLiteralExpr(std::string value)
+    DigitExpr(std::string value)
     {
         Value = value;
     }

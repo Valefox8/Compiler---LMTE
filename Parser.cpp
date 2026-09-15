@@ -117,10 +117,49 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
         std::unique_ptr<Expr> value;    // initialises the value
 
         if(varType == TokenType::Vwords){
-            Token lit = Advance();
-            value = std::make_unique<WordExpr>(lit.Value);
+            Token lit = Advance();  // Gets the literal and moves position
+            value = std::make_unique<WordExpr>(lit.Value);  // Saves this value 
         }
 
+        else if(varType == TokenType::Vletter)
+        {
+            Token lit = Advance();          // Gets the literal and moves position
+            value = std::make_unique<LetterExpr>(lit.Value);    // Saves this value 
+        }
+
+        else if(varType == TokenType::Vboolean)
+        {
+            Token lit = Advance();          // Gets the literal and moves position
+            value = std::make_unique<BooleanExpr>(lit.Type);    // Saves this value 
+        }
+
+        else if(varType == TokenType::VCharacter){
+            Token lit = Advance();          // Gets the literal and moves position
+
+            if(lit.Value.length() != 1){
+                throw std::runtime_error("Should be length 1");  // As per the production rules
+            }
+            value = std::make_unique<CharacterExpr>(lit.Value);
+        }
+
+        else if(varType == TokenType::VDigit){
+            Token lit = Advance();          // Gets the literal and moves position
+            
+            if(lit.Type != TokenType::Number || lit.Value.length() != 1)        // Digit must be a number of length 1 as per the production rules
+            {
+                throw std::runtime_error("Should be length 1 and a number gangalang");
+            }
+            value = std::make_unique<DigitExpr>(lit.Value);
+
+        }
+
+        else if(varType == TokenType::Vnum){
+            value = ParseExpression();      // Vnum can be a whole expression or just a value which is covered in parse expression
+        }
+
+        else{
+            throw std::runtime_error("Thats not a type lil bro lock in");   // Throws an error if its not a valid type
+        }
 
         return std::make_unique<VarDecExpr>(varType, name, std::move(value));       // returns the expression created
     }
