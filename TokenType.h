@@ -12,7 +12,23 @@ enum class TokenType
     Mod,
     LeftParen,
     RightParen,
-    EndOfFile
+    EndOfFile,
+
+    // Variable types
+    Vnum,
+    Vwords,
+    Vboolean,
+    Vletter,
+    VCharacter,
+    VDigit,
+
+    // Literal types
+    Real,
+    Cake,
+
+    // Literal tokens
+    WordLiteral,     // $...$ // as per grammar
+    LetterLiteral,   // #...# // as per grammar
 };
 
 #endif
