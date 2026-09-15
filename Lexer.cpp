@@ -84,6 +84,44 @@ Token Lexer::ReadNumber()
         return Token(TokenType::Number, value);
     }
 
+    Token Lexer::ReadWord(){
+        position++; // due to '$' at start of string
+        int start = position;   // Start position of letter
+        
+        while (position < (int)source.length() && source[position] != '$')      // Finds end position of letter (position before '$')
+        {
+            position++;
+        }
+
+        if (position >= (int)source.length())
+        {
+            throw std::runtime_error("You didnt Addclose the word");     // Throws error if unclosed 
+        }
+
+        std::string value = source.substr(start, position - start);     // Finds value between start and end position
+        position++; // goes past the end '$'
+        return Token(TokenType::Word, value);     // Returns it
+    }
+
+    Token Lexer::ReadLetter(){
+        position++; // due to '#' at start of string
+        int start = position;   // Start position of letter
+        
+        while (position < (int)source.length() && source[position] != '#')      // Finds end position of letter (position before '#')
+        {
+            position++;
+        }
+
+        if (position >= (int)source.length())
+        {
+            throw std::runtime_error("You didnt close the letter");     // Throws error if unclosed 
+        }
+
+        std::string value = source.substr(start, position - start);     // Finds value between start and end position
+        position++; // goes past the end '#'
+        return Token(TokenType::Letter, value);     // Returns it
+    }
+
 Token Lexer::ReadIdOrKey()
     {
         // Same as above

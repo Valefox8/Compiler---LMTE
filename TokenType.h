@@ -27,8 +27,8 @@ enum class TokenType
     Cake,
 
     // Literal tokens
-    WordLiteral,     // $...$ // as per grammar
-    LetterLiteral,   // #...# // as per grammar
+    Word,     // $...$ // as per grammar
+    Letter,   // #...# // as per grammar
 };
 
 #endif
