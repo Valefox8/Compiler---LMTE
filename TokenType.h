@@ -30,6 +30,11 @@ enum class TokenType
     // Literal tokens
     Word,     // $...$ // as per grammar
     Letter,   // #...# // as per grammar
+
+    // List helpers
+    Quote,      // " for the start and end of the list
+    Separator,  // '|' for separating list items
+    Dot         // "." for .size() and .at()
 };
 
 #endif

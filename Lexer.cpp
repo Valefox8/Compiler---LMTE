@@ -70,8 +70,32 @@ std::vector<Token> Lexer::Tokenize(){
 
         if (current == ')')
         {
-            // Checks if its a left bracket and pushes
+            // Checks if its a right bracket and pushes
             tokens.push_back(Token(TokenType::RightParen, ")"));
+            position++;
+            continue;
+        }
+
+        if (current == '"')
+        {
+            // Checks if its a quote and pushes
+            tokens.push_back(Token(TokenType::Quote, "\""));
+            position++;
+            continue;
+        }
+
+        if (current == '|')
+        {
+            // Checks if its a list item separator and pushes it
+            tokens.push_back(Token(TokenType::Separator, "|"));
+            position++;
+            continue;
+        }
+
+        if (current == '.')
+        {
+            // Checks if its a dot/full stop and pushes it 
+            tokens.push_back(Token(TokenType::Dot, "."));
             position++;
             continue;
         }
