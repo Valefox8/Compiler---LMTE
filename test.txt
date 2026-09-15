@@ -1,16 +1,16 @@
-1 mul (2 add 3) <!-- Comment --> div 10
-<!-- Comment2 -->
-1 add 2
-<!-- wadda helly -->
+<!-- Arithmetic -->
+1 mul (2 add 3) div 10
+
+<!-- Variables -->
 Vnum a = 12
-VDigit f = 1
 Vletter b = #b#
 Vwords c = $abc$
 Vboolean d = cake
-<!-- more comments fr -->
-Vnum e = 1 add 2
+VCharacter e = q
+VDigit f = 7
 
-<!-- Bro i lowkey screwed up MY OWN SYNTAX -->
-<!-- Game is gone -->
-<!-- testing new branch -->
-
+<!-- Lists -->
+"randoms | 1 | 2 add 3 | 10"
+randoms.at[0]
+randoms.at[2]
+randoms.size()

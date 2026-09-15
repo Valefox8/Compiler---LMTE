@@ -1,8 +1,11 @@
 ((1 * (2 + 3)) / 10)
-(1 + 2)
 a = 12
-f = 1
 b = "b"
 c = "abc"
-d = True
-e = (1 + 2)
+d = False
+e = "q"
+f = 7
+randoms = [1, (2 + 3), 10]
+randoms[0]
+randoms[2]
+len(randoms)

@@ -87,6 +87,40 @@ std::string CodeGen::GenCode(Expr* expr){
         return decl->Name + " = " + valueText;  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
 
+    // Creating the list
+    if(ListExpr* list = dynamic_cast<ListExpr*>(expr)){
+
+        // Grabs the name and the strat of the python list syntax
+        std::string result = list->Name + " = [";
+
+        // For each element in the elements vector, create a new python list entry 
+        for(size_t i = 0; i < list->Elements.size(); i++){
+            if(i > 0){
+                result += ", ";
+            }
+
+            result += GenCode(list->Elements[i].get());
+        }
+
+        // Finish list and return result
+        result += "]";
+        return result;
+    }
+
+
+
+
+    if (ListAtExpr* at = dynamic_cast<ListAtExpr*>(expr))
+    {
+        return at->ListName + "[" + GenCode(at->Index.get()) + "]";     // returns name[index]
+    }
+
+    // Length of a list
+    if (ListSizeExpr* size = dynamic_cast<ListSizeExpr*>(expr))
+    {
+        return "len(" + size->ListName + ")";   // returns len(name)
+    }
+     
     // Unknown type 
     throw std::runtime_error("Unknown expression type");
 }
