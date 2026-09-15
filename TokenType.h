@@ -13,6 +13,7 @@ enum class TokenType
     LeftParen,
     RightParen,
     EndOfFile,
+    Equals,
 
     // Variable types
     Vnum,

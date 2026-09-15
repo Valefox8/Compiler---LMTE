@@ -35,9 +35,28 @@ std::vector<Token> Lexer::Tokenize(){
             continue;
         }
 
-        if (current == '<' && checkforward("<!--"))   // new - check for comment start
+        if (current == '<' && checkforward("<!--"))   // check for comment start
         {
             Comment();
+            continue;
+        }
+
+        if (current == '$')                        // Check for word start
+        {
+            tokens.push_back(ReadWord());           // call letter read
+            continue;
+        }
+
+        if (current == '#')                        // check for letter start
+        {
+            tokens.push_back(ReadLetter());         // call letter read
+            continue;
+        }
+
+        if (current == '=')                         // check for equals/assignment
+        {
+            tokens.push_back(Token(TokenType::Equals, "="));    // Push that token into token list
+            position++;
             continue;
         }
 
