@@ -34,7 +34,9 @@ enum class TokenType
     // List helpers
     Quote,      // " for the start and end of the list
     Separator,  // '|' for separating list items
-    Dot         // "." for .size() and .at()
+    Dot,         // "." for .size() and .at()
+    LeftBracket,   // [ for .at
+    RightBracket,  // ] for .at
 };
 
 #endif

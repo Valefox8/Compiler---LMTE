@@ -144,11 +144,25 @@ class ListExpr : public Expr{
 };
 
 class ListAtExpr : public Expr{
+    public:
+        std::string ListName;
+        std::unique_ptr<Expr> Index;
 
+        ListAtExpr(std::string listName, std::unique_ptr<Expr> index)
+        {
+            ListName = listName;
+            Index = std::move(index);
+        }
 };
 
 class ListSizeExpr : public Expr{
+    public:
+    std::string ListName;
 
+    ListSizeExpr(std::string listName)
+    {
+        ListName = listName;
+    }
 };
 
 #endif

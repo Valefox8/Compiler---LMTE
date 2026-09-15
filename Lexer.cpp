@@ -100,6 +100,22 @@ std::vector<Token> Lexer::Tokenize(){
             continue;
         }
 
+        if (current == '[')
+        {
+            // check for [ and pushes it
+            tokens.push_back(Token(TokenType::LeftBracket, "["));
+            position++;
+            continue;
+        }
+
+        if (current == ']')
+        {
+            // check for ] and pushes it
+            tokens.push_back(Token(TokenType::RightBracket, "]"));
+            position++;
+            continue;
+        }
+
         // If its not an expected symbol
         throw std::runtime_error("Lexical error: unexpected character");
     }
