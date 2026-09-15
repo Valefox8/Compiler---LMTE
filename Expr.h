@@ -14,6 +14,8 @@ public:
     virtual ~Expr() {}
 };
 
+
+// these first ones are for arithmetic
 class NumberExpr : public Expr  // Identifies a number
 {
 public:
@@ -51,5 +53,47 @@ public:
     }
 };
 
+
+
+// THESE NEXT ONES ARE FOR VARIABLES PRIMARILY
+// same structure as above
+class WordExpr : public Expr
+{
+public:
+    std::string Value;
+
+    WordExpr(std::string value)
+    {
+        Value = value;
+    }
+};
+
+class LetterExpr : public Expr
+{
+public:
+    std::string Value;
+
+    LetterExpr(std::string value)
+    {
+        Value = value;
+    }
+};
+
+// This one differs using a bool since real and cake is our true and false
+class BooleanExpr : public Expr
+{
+public:
+    bool Value;   // true for real, false for cake
+
+    BooleanExpr(bool value)
+    {
+        Value = value;
+    }
+};
+
+// The bigger fucntion for variable dec
+class VarDecExpr : public Expr{
+    public:
+}
 
 #endif
