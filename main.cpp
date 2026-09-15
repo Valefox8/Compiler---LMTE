@@ -52,15 +52,22 @@ int main()
     // Creates an instance of code generator
     CodeGen generator;
 
-    // Print the result and initial string
-    std::cout << "Source:    " << source << std::endl;
-    std::cout << "Generated: " << std::endl;
+    std::ofstream outFile("python.py");   // open a file for writing
 
-    for (size_t i = 0; i < trees.size(); i++)   // loop over each tree
+    if (!outFile.is_open())               // make sure file is there and opened
     {
-        std::string output = generator.GenCode(trees[i].get()); // generate code
-        std::cout << output << std::endl;   // print code
+        throw std::runtime_error("Couldnt open file");
     }
+
+    for (size_t i = 0; i < trees.size(); i++)   // Same loop as before but to file
+    {
+        std::string output = generator.GenCode(trees[i].get());
+        outFile << output << std::endl;   // write to the file instead of the terminal
+    }
+
+    outFile.close();   // Close file
+
+    std::cout << "written to python.py" << std::endl;   // comfirmation message
 
     return 0;
 }

@@ -2,9 +2,13 @@
 <!-- Comment2 -->
 1 add 2
 <!-- wadda helly -->
-a = 12
-b = #b#
-c = $abc$
-d = cake 
+Vnum a = 12
+Vletter b = #b#
+Vwords c = $abc$
+Vboolean d = cake
 <!-- more comments fr -->
-e = 1 add 2
+Vnum e = 1 add 2
+
+<!-- Bro i lowkey screwed up MY OWN SYNTAX -->
+<!-- Game is gone -->
+

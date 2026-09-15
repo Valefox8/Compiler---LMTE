@@ -130,7 +130,15 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
         else if(varType == TokenType::Vboolean)
         {
             Token lit = Advance();          // Gets the literal and moves position
-            value = std::make_unique<BooleanExpr>(lit.Type);    // Saves this value 
+            bool boolValue = NULL;
+            if(lit.Type == TokenType::Real){
+                boolValue = true;
+            }
+            else if(lit.Type == TokenType::Cake){
+                boolValue = true;
+            }
+
+            value = std::make_unique<BooleanExpr>(boolValue);    // Saves this value 
         }
 
         else if(varType == TokenType::VCharacter){
