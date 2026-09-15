@@ -94,6 +94,18 @@ public:
 // The bigger fucntion for variable dec
 class VarDecExpr : public Expr{
     public:
-}
+        // The 3 parts of variable dec (type, name and value)
+        TokenType VarType;              // Vnum, Vwords, Vboolean, Vletter, etc.
+        std::string Name;               // the variable's identifier
+        std::unique_ptr<Expr> Value;    // whatever is assigned - a NumberExpr, BinaryExpr, or a literal
+
+         VarDecExpr(TokenType varType, std::string name, std::unique_ptr<Expr> value)   // Var dec expression constructor
+        {
+            VarType = varType;
+            Name = name;
+            Value = std::move(value);
+        }
+
+};
 
 #endif
