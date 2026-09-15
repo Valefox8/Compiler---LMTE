@@ -103,6 +103,18 @@ Token Lexer::ReadIdOrKey()
         if (value == "div") return Token(TokenType::Div, value);
         if (value == "mod") return Token(TokenType::Mod, value);
 
+        // Variable type identifiers
+        if (value == "Vnum") return Token(TokenType::Vnum, value);
+        if (value == "Vwords") return Token(TokenType::Vwords, value);
+        if (value == "Vboolean") return Token(TokenType::Vboolean, value);
+        if (value == "Vletter") return Token(TokenType::Vletter, value);
+        if (value == "VCharacter") return Token(TokenType::VCharacter, value);
+        if (value == "VDigit") return Token(TokenType::VDigit, value);
+
+        // Real and cake identifiers
+        if (value == "real") return Token(TokenType::Real, value);
+        if (value == "cake") return Token(TokenType::Cake, value);
+
         // Failsafe to treat as an identifier if it doesnt hit any of the above
         return Token(TokenType::Identifier, value);
     }
