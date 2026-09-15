@@ -3,6 +3,7 @@
 1 add 2
 <!-- wadda helly -->
 Vnum a = 12
+VDigit f = 1
 Vletter b = #b#
 Vwords c = $abc$
 Vboolean d = cake

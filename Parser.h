@@ -22,6 +22,7 @@ class Parser{
     std::vector<std::unique_ptr<Expr>> ParseProgram();   // parses for expressions within a program
     std::unique_ptr<Expr> ParseStatement();              // Decides whether its an expression or a variable dec for parsing
     std::unique_ptr<Expr> ParseVarDec();     // Self explainitory by the name
+    std::unique_ptr<Expr> ParseList();         // also self explanitory by the name 
 };
 
 

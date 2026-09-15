@@ -97,7 +97,7 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
 
         TokenType current = Current().Type;     // Gets the current token type 
 
-        if (current == TokenType::Vnum || current == TokenType::Vwords || current == TokenType::Vboolean || current == TokenType::Vletter)  // If the token type is a type identifier, call variable declaration
+        if (current == TokenType::Vnum || current == TokenType::Vwords || current == TokenType::Vboolean || current == TokenType::Vletter || current == TokenType::VCharacter || current == TokenType::VDigit)  // If the token type is a type identifier, call variable declaration
         {
             return ParseVarDec();
         }
@@ -135,7 +135,7 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
                 boolValue = true;
             }
             else if(lit.Type == TokenType::Cake){
-                boolValue = true;
+                boolValue = false;
             }
 
             value = std::make_unique<BooleanExpr>(boolValue);    // Saves this value 
@@ -164,10 +164,14 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
         else if(varType == TokenType::Vnum){
             value = ParseExpression();      // Vnum can be a whole expression or just a value which is covered in parse expression
         }
-
-        else{
-            throw std::runtime_error("Thats not a type lil bro lock in");   // Throws an error if its not a valid type
-        }
-
-        return std::make_unique<VarDecExpr>(varType, name, std::move(value));       // returns the expression created
+        
+    else{
+        throw std::runtime_error("Thats not a type lil bro lock in");   // Throws an error if its not a valid type
     }
+
+    return std::make_unique<VarDecExpr>(varType, name, std::move(value));       // returns the expression created
+ }
+
+std::unique_ptr<Expr> Parser::ParseList(){
+
+}

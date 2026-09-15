@@ -1,7 +1,7 @@
 #ifndef EXPR_H
 #define EXPR_H
 
-
+#include <vector>
 #include <memory>
 #include <string>
 #include "TokenType.h"
@@ -127,6 +127,27 @@ class VarDecExpr : public Expr{
             Name = name;
             Value = std::move(value);
         }
+
+};
+
+// THESE ARE FOR THE LIST IMPLEMENTATION
+// List expression function
+class ListExpr : public Expr{
+    public:
+        std::string Name;
+        std::vector<std::unique_ptr<Expr>> Elements;
+
+        ListExpr(std::string name, std::vector<std::unique_ptr<Expr>> elements){
+            Name = name;
+            Elements = std::move(elements);
+        }
+};
+
+class ListAtExpr : public Expr{
+
+};
+
+class ListSizeExpr : public Expr{
 
 };
 
