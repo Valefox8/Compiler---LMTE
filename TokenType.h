@@ -37,6 +37,16 @@ enum class TokenType
     Dot,         // "." for .size() and .at()
     LeftBracket,   // [ for .at
     RightBracket,  // ] for .at
+
+    // Function scope 
+    Comma, // "," separates statements in  a function
+    Colon, // ":" begins the scope for a function
+    Semicolon, // ";" ends a statement in a function
+
+
+    // Defining Functions
+    Function, // "function" keyword
+    Leave,    // "leave" keyword
 };
 
 #endif
