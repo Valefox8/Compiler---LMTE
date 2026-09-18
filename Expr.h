@@ -165,4 +165,34 @@ class ListSizeExpr : public Expr{
     }
 };
 
+
+// still need to edit
+class LeaveExpr : public Expr{
+    public:
+        std::string Value;
+        LeaveExpr(){
+            Value == "return";
+        }
+};
+
+class HandbrakeExpr : public Expr{
+    public:
+        std::string Value;
+        HandbrakeExpr(){
+            Value = "break";
+        }
+};
+
+class IterationExpr : public Expr{
+    public:
+        std::vector<std::unique_ptr<Expr>> Codeline;
+};
+
+
+class ConditionalStatement : public Expr{
+    public:
+       std::vector<std::unique_ptr<Expr>> Codeline;
+
+};
+
 #endif
