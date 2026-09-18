@@ -116,6 +116,30 @@ std::vector<Token> Lexer::Tokenize(){
             continue;
         }
 
+        if (current == ',')
+        {
+            // check for , and pushes it
+            tokens.push_back(Token(TokenType::Comma, ","));
+            position++;
+            continue;
+        }
+
+        if (current == ':')
+        {
+            // check for : and pushes it
+            tokens.push_back(Token(TokenType::Colon, ":"));
+            position++;
+            continue;
+        }
+
+        if (current == ';')
+        {
+            // check for ; and pushes it
+            tokens.push_back(Token(TokenType::Semicolon, ";"));
+            position++;
+            continue;
+        }
+
         // If its not an expected symbol
         throw std::runtime_error("Lexical error: unexpected character");
     }
@@ -211,6 +235,10 @@ Token Lexer::ReadIdOrKey()
         // Real and cake identifiers
         if (value == "real") return Token(TokenType::Real, value);
         if (value == "cake") return Token(TokenType::Cake, value);
+
+        // Function keywords
+        if (value == "FUNCTION") return Token(TokenType::Function, value);
+        if (value == "leave") return Token(TokenType::Leave, value);
 
         // Failsafe to treat as an identifier if it doesnt hit any of the above
         return Token(TokenType::Identifier, value);

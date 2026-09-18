@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include "TokenType.h"
+#include <utility>
 
 // These are for the parser where it defines the tree node shapes
 
@@ -165,4 +166,27 @@ class ListSizeExpr : public Expr{
     }
 };
 
+class FunctionDecExpr : public Expr{
+    public:
+        std::string Name;                                        // Function name
+        std::vector<std::pair<TokenType, std::string>> Params;   // Parameters type and name
+        std::vector<std::unique_ptr<Expr>> Body;                 // The statements inside the scope
+
+        FunctionDecExpr(std::string name, std::vector<std::pair<TokenType, std::string>> params, std::vector<std::unique_ptr<Expr>> body)
+        {
+            Name = name;
+            Params = std::move(params);
+            Body = std::move(body);
+        }
+};
+
+class ReturnExpr : public Expr{     // Leave keyword
+    public:
+        std::unique_ptr<Expr> Value;
+
+        ReturnExpr(std::unique_ptr<Expr> value)
+        {
+            Value = std::move(value);
+        }
+};
 #endif

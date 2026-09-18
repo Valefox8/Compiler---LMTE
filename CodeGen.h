@@ -8,6 +8,7 @@ class CodeGen
 {
 private:
     std::string Operator(TokenType op);
+    std::string Indent(std::string text);
 
 public:
     std::string GenCode(Expr* expr);

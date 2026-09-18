@@ -14,3 +14,8 @@ VDigit f = 7
 randoms.at[0]
 randoms.at[2]
 randoms.size()
+
+<!-- Functions -->
+FUNCTION Addition Vnum num1 | Vnum num2:
+Vnum result = num1 add num2,
+leave result;

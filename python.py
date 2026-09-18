@@ -9,3 +9,6 @@ randoms = [1, (2 + 3), 10]
 randoms[0]
 randoms[2]
 len(randoms)
+def Addition(num1, num2):
+    result = (num1 + num2)
+    return result

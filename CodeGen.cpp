@@ -20,6 +20,21 @@ std::string CodeGen::Operator(TokenType op){
 
     throw std::runtime_error("Unknown op");
 }
+std::string CodeGen::Indent(std::string text){
+    std::string result = "    ";   // Indent the first line
+
+    for (size_t i = 0; i < text.length(); i++)
+    {
+        result += text[i];
+
+        if (text[i] == '\n')
+        {
+            result += "    ";
+        }
+    }
+
+    return result;
+}
 
 std::string CodeGen::GenCode(Expr* expr){
 
@@ -121,6 +136,38 @@ std::string CodeGen::GenCode(Expr* expr){
         return "len(" + size->ListName + ")";   // returns len(name)
     }
      
+    // Function declaration
+    if (FunctionDecExpr* function = dynamic_cast<FunctionDecExpr*>(expr))
+    {
+        std::string result = "def " + function->Name + "(";
+
+        for (size_t i = 0; i < function->Params.size(); i++)
+        {
+            if (i > 0)
+            {
+                result += ", ";
+            }
+
+            result += function->Params[i].second;
+        }
+
+        result += "):";
+
+        // Each statement goes on its own indented line
+        for (size_t i = 0; i < function->Body.size(); i++)
+        {
+            result += "\n" + Indent(GenCode(function->Body[i].get()));
+        }
+
+        return result;
+    }
+
+    // Return statement
+    if (ReturnExpr* leave = dynamic_cast<ReturnExpr*>(expr))
+    {
+        return "return " + GenCode(leave->Value.get());
+    }
+
     // Unknown type 
     throw std::runtime_error("Unknown expression type");
 }

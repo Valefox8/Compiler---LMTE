@@ -133,6 +133,16 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
             return ParseVarDec();
         }
 
+                if (current == TokenType::Function)   // Function declaration
+        {
+            return ParseFunctionDec();
+        }
+
+        if (current == TokenType::Leave)      // Return statement
+        {
+            return ParseReturn();
+        }
+
         return ParseExpression();       // Otherwise call expression (arithemtic) for now
     }      
 
@@ -227,5 +237,60 @@ std::unique_ptr<Expr> Parser::ParseList(){
     Advance();   // move past "
 
     return std::make_unique<ListExpr>(name, std::move(elements));   // Make a list expression using the name and element vector
+    }
+// Follows grammer rule   <FunctionDeclaration> -> FUNCTION Identifier <ParameterList>: <StatementList>;
 
+std::unique_ptr<Expr> Parser::ParseFunctionDec(){
+    Advance();      // Move past FUNCTION
+
+    Token nameToken = Advance();        // Get the function name
+    std::string name = nameToken.Value;
+
+    std::vector<std::pair<TokenType, std::string>> params;   // Create the parameter vector
+
+    while (Current().Type != TokenType::Colon)   // Read parameters until the scope opens
+    {
+        if (Current().Type == TokenType::EndOfFile)
+        {
+            throw std::runtime_error("Function missing ';' close your scope");
+        }
+
+        TokenType paramType = Advance().Type;       // parameter type
+        std::string paramName = Advance().Value;    // parameter name
+        params.push_back({paramType, paramName});
+
+        if (Current().Type == TokenType::Separator)
+        {
+            Advance();
+        }
+    }
+
+    Advance();      // Move past the ':'
+
+    std::vector<std::unique_ptr<Expr>> body;
+
+    while (Current().Type != TokenType::Semicolon)   // Read statements until the scope closes
+    {
+        if (Current().Type == TokenType::EndOfFile)
+        {
+            throw std::runtime_error("Function missing ';' close your scope");
+        }
+
+        body.push_back(ParseStatement());
+
+        if (Current().Type == TokenType::Comma)   // ',' between statements
+        {
+            Advance();
+        }
+    }
+
+    Advance();      // Move past the ';'
+
+    return std::make_unique<FunctionDecExpr>(name, std::move(params), std::move(body));
+}
+
+// Follows grammer rule   <ReturnStatement> -> leave <Expression>
+std::unique_ptr<Expr> Parser::ParseReturn(){
+    Advance();      // Move past leave
+    return std::make_unique<ReturnExpr>(ParseExpression());
 }
