@@ -30,16 +30,24 @@ Token Parser::Advance(){
 // The parse tree is build off the rules where theres an expresion, a term and a factor, where they each get lower.
 
 
+//create a new function for boolean operators
 
-/* // create a new function for conditional statement
 
- while(Current().Type == TokenType::Equalto || Current().Type == TokenType::Equallessthan || 
+// create a new function for conditional statement
+std::unique_ptr<Expr> Parser::ParseComparisonOperator(){
+    std::unique_ptr<Expr> left = ParseExpression();
+
+    while(Current().Type == TokenType::Equalto || Current().Type == TokenType::Equallessthan || Current().Type == TokenType::Istotallydefinitelynotequalto ||
         Current().Type == TokenType::Equalmorethan || Current().Type == TokenType::Lessthan || Current().Type == TokenType::Morethan)
-{
-
+    {
+        TokenType op = Advance().Type;
+        std::unique_ptr<Expr> right = ParseExpression();
+        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+    }
+    
+    return left;
 }
-*/
-
+ 
 
 std::unique_ptr<Expr> Parser::ParseExpression(){
     std::unique_ptr<Expr> left = ParseTerm();   // Parse the first Term 
@@ -161,7 +169,7 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
     else if (current == TokenType::Equalto || current == TokenType::Lessthan || current == TokenType::Morethan || 
         current == TokenType::Istotallydefinitelynotequalto || current == TokenType::Equallessthan || current == TokenType::Equalmorethan)
     {
-        /* code */
+        return ParseComparisonOperator();
     }
 
     // boolean operator check
@@ -172,7 +180,7 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
 
     
     
-
+    // probably need to change to ParseComparisonOperator()
     return ParseExpression();       // Otherwise call expression (arithemtic) for now
 }      
 

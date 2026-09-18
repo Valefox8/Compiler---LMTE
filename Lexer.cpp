@@ -215,7 +215,7 @@ Token Lexer::ReadIdOrKey()
         // Iteration
         if (value == "forwhencake") return Token(TokenType::Forwhencake, value);
         
-        // COnditional Statement
+        // Conditional Statement
         if (value == "iguessif") return Token(TokenType::IguessIf, value);
         if (value == "guessthis") return Token(TokenType::Guessthis, value);
         if (value == "guessnot") return Token(TokenType::Guessnot, value);
@@ -224,7 +224,7 @@ Token Lexer::ReadIdOrKey()
         if (value == "equal") return Token(TokenType::Equalto, value);
         if (value == "lessThan") return Token(TokenType::Lessthan, value);
         if (value == "moreThan") return Token(TokenType::Morethan, value);
-        if (value == " isTotallyDefinitelyNotEqualTo") return Token(TokenType::Istotallydefinitelynotequalto, value);
+        if (value == "isTotallyDefinitelyNotEqualTo") return Token(TokenType::Istotallydefinitelynotequalto, value);
         if (value == "equalLessThan") return Token(TokenType::Equallessthan, value);
         if (value == "equalMoreThan") return Token(TokenType::Equalmorethan, value);
         
