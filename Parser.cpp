@@ -29,6 +29,18 @@ Token Parser::Advance(){
 
 // The parse tree is build off the rules where theres an expresion, a term and a factor, where they each get lower.
 
+
+
+/* // create a new function for conditional statement
+
+ while(Current().Type == TokenType::Equalto || Current().Type == TokenType::Equallessthan || 
+        Current().Type == TokenType::Equalmorethan || Current().Type == TokenType::Lessthan || Current().Type == TokenType::Morethan)
+{
+
+}
+*/
+
+
 std::unique_ptr<Expr> Parser::ParseExpression(){
     std::unique_ptr<Expr> left = ParseTerm();   // Parse the first Term 
 
@@ -124,77 +136,105 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
     return statements;
 }
 
-    std::unique_ptr<Expr> Parser::ParseStatement(){
+std::unique_ptr<Expr> Parser::ParseStatement(){
 
-        TokenType current = Current().Type;     // Gets the current token type 
+    TokenType current = Current().Type;     // Gets the current token type 
 
-        if (current == TokenType::Vnum || current == TokenType::Vwords || current == TokenType::Vboolean || current == TokenType::Vletter || current == TokenType::VCharacter || current == TokenType::VDigit)  // If the token type is a type identifier, call variable declaration
+    if (current == TokenType::Vnum || current == TokenType::Vwords || current == TokenType::Vboolean || current == TokenType::Vletter || current == TokenType::VCharacter || current == TokenType::VDigit)  // If the token type is a type identifier, call variable declaration
+    {
+        return ParseVarDec();
+    }
+
+    // iteration check
+    else if (current == TokenType::Forwhencake)
+    {
+        /* code */
+    }
+
+    // conditional statement check
+    else if (current == TokenType::IguessIf || current == TokenType::Guessthis || current == TokenType::Guessnot )
+    {
+        /* code */
+    }
+    
+    // comparison operator check
+    else if (current == TokenType::Equalto || current == TokenType::Lessthan || current == TokenType::Morethan || 
+        current == TokenType::Istotallydefinitelynotequalto || current == TokenType::Equallessthan || current == TokenType::Equalmorethan)
+    {
+        /* code */
+    }
+
+    // boolean operator check
+    else if (current == TokenType::Dna || current == TokenType::Ro)
+    {
+        /* code */
+    }
+
+    
+    
+
+    return ParseExpression();       // Otherwise call expression (arithemtic) for now
+}      
+
+// Follows grammer rule     <VariableDeclaration> ->	<VariableType> Identifier = <Expression>
+
+std::unique_ptr<Expr> Parser::ParseVarDec(){
+    TokenType varType = Advance().Type;     // Saves the type and moves to next value
+    Token nameToken = Advance();          // saves the name as a token
+    std::string name = nameToken.Value;     // Creates a name string based off the value just found from the token
+
+    Advance();                            // Moves on past the =
+
+    std::unique_ptr<Expr> value;    // initialises the value
+
+    if(varType == TokenType::Vwords){
+        Token lit = Advance();  // Gets the literal and moves position
+        value = std::make_unique<WordExpr>(lit.Value);  // Saves this value 
+    }
+
+    else if(varType == TokenType::Vletter)
+    {
+        Token lit = Advance();          // Gets the literal and moves position
+        value = std::make_unique<LetterExpr>(lit.Value);    // Saves this value 
+    }
+
+    else if(varType == TokenType::Vboolean)
+    {
+        Token lit = Advance();          // Gets the literal and moves position
+        bool boolValue = NULL;
+        if(lit.Type == TokenType::Real){
+            boolValue = true;
+        }
+        else if(lit.Type == TokenType::Cake){
+            boolValue = false;
+        }
+
+        value = std::make_unique<BooleanExpr>(boolValue);    // Saves this value 
+    }
+
+    else if(varType == TokenType::VCharacter){
+        Token lit = Advance();          // Gets the literal and moves position
+
+        if(lit.Value.length() != 1){
+            throw std::runtime_error("Should be length 1");  // As per the production rules
+        }
+        value = std::make_unique<CharacterExpr>(lit.Value);
+    }
+
+    else if(varType == TokenType::VDigit){
+        Token lit = Advance();          // Gets the literal and moves position
+        
+        if(lit.Type != TokenType::Number || lit.Value.length() != 1)        // Digit must be a number of length 1 as per the production rules
         {
-            return ParseVarDec();
+            throw std::runtime_error("Should be length 1 and a number gangalang");
         }
+        value = std::make_unique<DigitExpr>(lit.Value);
 
-        return ParseExpression();       // Otherwise call expression (arithemtic) for now
-    }      
+    }
 
-    // Follows grammer rule     <VariableDeclaration> ->	<VariableType> Identifier = <Expression>
-
-    std::unique_ptr<Expr> Parser::ParseVarDec(){
-        TokenType varType = Advance().Type;     // Saves the type and moves to next value
-        Token nameToken = Advance();          // saves the name as a token
-        std::string name = nameToken.Value;     // Creates a name string based off the value just found from the token
-
-        Advance();                            // Moves on past the =
-
-        std::unique_ptr<Expr> value;    // initialises the value
-
-        if(varType == TokenType::Vwords){
-            Token lit = Advance();  // Gets the literal and moves position
-            value = std::make_unique<WordExpr>(lit.Value);  // Saves this value 
-        }
-
-        else if(varType == TokenType::Vletter)
-        {
-            Token lit = Advance();          // Gets the literal and moves position
-            value = std::make_unique<LetterExpr>(lit.Value);    // Saves this value 
-        }
-
-        else if(varType == TokenType::Vboolean)
-        {
-            Token lit = Advance();          // Gets the literal and moves position
-            bool boolValue = NULL;
-            if(lit.Type == TokenType::Real){
-                boolValue = true;
-            }
-            else if(lit.Type == TokenType::Cake){
-                boolValue = false;
-            }
-
-            value = std::make_unique<BooleanExpr>(boolValue);    // Saves this value 
-        }
-
-        else if(varType == TokenType::VCharacter){
-            Token lit = Advance();          // Gets the literal and moves position
-
-            if(lit.Value.length() != 1){
-                throw std::runtime_error("Should be length 1");  // As per the production rules
-            }
-            value = std::make_unique<CharacterExpr>(lit.Value);
-        }
-
-        else if(varType == TokenType::VDigit){
-            Token lit = Advance();          // Gets the literal and moves position
-            
-            if(lit.Type != TokenType::Number || lit.Value.length() != 1)        // Digit must be a number of length 1 as per the production rules
-            {
-                throw std::runtime_error("Should be length 1 and a number gangalang");
-            }
-            value = std::make_unique<DigitExpr>(lit.Value);
-
-        }
-
-        else if(varType == TokenType::Vnum){
-            value = ParseExpression();      // Vnum can be a whole expression or just a value which is covered in parse expression
-        }
+    else if(varType == TokenType::Vnum){
+        value = ParseExpression();      // Vnum can be a whole expression or just a value which is covered in parse expression
+    }
 
     else{
         throw std::runtime_error("Thats not a type lil bro lock in");   // Throws an error if its not a valid type

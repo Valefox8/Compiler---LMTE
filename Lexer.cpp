@@ -211,6 +211,28 @@ Token Lexer::ReadIdOrKey()
         // Real and cake identifiers
         if (value == "real") return Token(TokenType::Real, value);
         if (value == "cake") return Token(TokenType::Cake, value);
+        
+        // Iteration
+        if (value == "forwhencake") return Token(TokenType::Forwhencake, value);
+        
+        // COnditional Statement
+        if (value == "iguessif") return Token(TokenType::IguessIf, value);
+        if (value == "guessthis") return Token(TokenType::Guessthis, value);
+        if (value == "guessnot") return Token(TokenType::Guessnot, value);
+
+        // Comparison Operators
+        if (value == "equal") return Token(TokenType::Equalto, value);
+        if (value == "lessThan") return Token(TokenType::Lessthan, value);
+        if (value == "moreThan") return Token(TokenType::Morethan, value);
+        if (value == " isTotallyDefinitelyNotEqualTo") return Token(TokenType::Istotallydefinitelynotequalto, value);
+        if (value == "equalLessThan") return Token(TokenType::Equallessthan, value);
+        if (value == "equalMoreThan") return Token(TokenType::Equalmorethan, value);
+        
+        // Boolean Operator
+        if (value == "dna") return Token(TokenType::Dna, value);
+        if (value == "ro") return Token(TokenType::Ro, value);
+        
+
 
         // Failsafe to treat as an identifier if it doesnt hit any of the above
         return Token(TokenType::Identifier, value);

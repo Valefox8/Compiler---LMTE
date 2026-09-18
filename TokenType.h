@@ -13,7 +13,7 @@ enum class TokenType
     LeftParen,
     RightParen,
     EndOfFile,
-    Equals,
+    Equals, // assigne value
 
     // Variable types
     Vnum,
@@ -26,6 +26,27 @@ enum class TokenType
     // Literal types
     Real,
     Cake,
+
+    // Conditional statements
+    IguessIf,   // if(<condition>){}
+    Guessthis,  // else if(<condition){}
+    Guessnot,   // else{}
+    
+    // Comparison Expression
+    Equalto, // ==
+    Lessthan, // <
+    Morethan, // >
+    Istotallydefinitelynotequalto, // !=
+    Equallessthan, // <=
+    Equalmorethan, // >=
+
+    // Boolean Operator
+    Dna, // and
+    Ro, // or
+
+    // Iterations
+    Forwhencake, // while(True){}
+    Handbrake,   // break
 
     // Literal tokens
     Word,     // $...$ // as per grammar
