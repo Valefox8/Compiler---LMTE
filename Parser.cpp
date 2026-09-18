@@ -31,7 +31,16 @@ Token Parser::Advance(){
 
 
 //create a new function for boolean operators
+std::unique_ptr<Expr> Parser::ParseBooleanOperator(){
+    std::unique_ptr<Expr> left = ParseComparisonOperator();
 
+    while(Current().Type == TokenType::Dna || Current().Type == TokenType::Ro)
+    {
+        TokenType op = Advance().Type;
+        std::unique_ptr<Expr> right = ParseComparisonOperator();
+        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+    }
+}
 
 // create a new function for conditional statement
 std::unique_ptr<Expr> Parser::ParseComparisonOperator(){
@@ -165,23 +174,8 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
         /* code */
     }
     
-    // comparison operator check
-    else if (current == TokenType::Equalto || current == TokenType::Lessthan || current == TokenType::Morethan || 
-        current == TokenType::Istotallydefinitelynotequalto || current == TokenType::Equallessthan || current == TokenType::Equalmorethan)
-    {
-        return ParseComparisonOperator();
-    }
 
-    // boolean operator check
-    else if (current == TokenType::Dna || current == TokenType::Ro)
-    {
-        /* code */
-    }
-
-    
-    
-    // probably need to change to ParseComparisonOperator()
-    return ParseExpression();       // Otherwise call expression (arithemtic) for now
+    return ParseBooleanOperator();       // Otherwise call expression (arithemtic) for now
 }      
 
 // Follows grammer rule     <VariableDeclaration> ->	<VariableType> Identifier = <Expression>
