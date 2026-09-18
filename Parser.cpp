@@ -165,13 +165,13 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
     // iteration check
     else if (current == TokenType::Forwhencake)
     {
-        /* code */
+        // add new function to recursively use ParseStatement() tile reach the end of the scope
     }
 
     // conditional statement check
     else if (current == TokenType::IguessIf || current == TokenType::Guessthis || current == TokenType::Guessnot )
     {
-        /* code */
+        // add new function to recursively use ParseStatement() tile reach the end of the scope
     }
     
 
