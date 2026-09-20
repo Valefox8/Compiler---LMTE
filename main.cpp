@@ -61,7 +61,7 @@ int main()
 
     for (size_t i = 0; i < trees.size(); i++)   // Same loop as before but to file
     {
-        std::string output = generator.GenCode(trees[i].get());
+        std::string output = generator.GenCode(0, trees[i].get());
         outFile << output << std::endl;   // write to the file instead of the terminal
     }
 

@@ -166,7 +166,7 @@ class ListSizeExpr : public Expr{
 };
 
 
-// still need to edit
+// Iteration components
 class HandbrakeExpr : public Expr{
     public:
         std::string Value;
@@ -184,6 +184,7 @@ class IterationExpr : public Expr{
         }
 };
 
+// Conditional statements
 class ConditionalStatementStructExpr : public Expr{
     public:
         std::vector<std::unique_ptr<Expr>> ConditionalStatements;

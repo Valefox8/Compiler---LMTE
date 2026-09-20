@@ -17,11 +17,91 @@ std::string CodeGen::Operator(TokenType op){
     if(op == TokenType::Mod){
         return "%";
     }
+    if(op == TokenType::Dna){
+        return "and";
+    }
+    if(op == TokenType::Ro){
+        return "or";
+    }
+    if(op == TokenType::Equalto){
+        return "==";
+    }
+    if(op == TokenType::Lessthan){
+        return "<";
+    }
+    if(op == TokenType::Morethan){
+        return ">";
+    }
+    if(op == TokenType::Istotallydefinitelynotequalto){
+        return "!=";
+    }
+    if(op == TokenType::Equallessthan){
+        return "<=";
+    }
+    if(op == TokenType::Equalmorethan){
+        return ">=";
+    }
 
     throw std::runtime_error("Unknown op");
 }
 
-std::string CodeGen::GenCode(Expr* expr){
+// level represents the amount of \t to add
+std::string CodeGen::Iteration(int level, IterationExpr* expr){
+    std::string tabs = std::string(level, '\t');
+    std::string changeline = "\n";
+    std::string codes = tabs + "while(true):";
+
+    for(const auto& codeline : expr->Codeline){
+        codes += tabs + GenCode(level + 1, codeline.get()) + changeline;
+    }
+
+    return codes;
+}
+
+std::string CodeGen::ConditionalStatement(int level, ConditionalStatementExpr* expr){
+    std::string tabs = std::string(level, '\t');
+    std::string changeline = "\n";
+    
+    // check if else elif
+    TokenType type = expr->Type;
+    std::string condition;
+    std::string codes;
+
+    if(type == TokenType::IguessIf){
+        //generate condition codes
+        condition = GenCode(0, expr->Condition.get());
+        codes = tabs + "if " + condition + ":" + changeline;
+    }
+    else if (type == TokenType::Guessthis)
+    {
+        //generate condition codes
+        condition = GenCode(0, expr->Condition.get());
+        codes = tabs + "elif " + condition + ":" + changeline;
+    }
+    else if (type == TokenType::Guessnot)
+    {
+        codes = tabs + "else:" + changeline;
+    }
+    
+
+    for(const auto& codeline : expr->Codeline){
+        codes += tabs + GenCode(level + 1, codeline.get()) + changeline;
+    }
+
+    return codes;
+}
+
+std::string CodeGen::ConditionalStatementStruct(int level, ConditionalStatementStructExpr* expr){
+    std::string codes = "";
+
+    for(const auto& codeline : expr->ConditionalStatements){
+        auto* conditional = dynamic_cast<ConditionalStatementExpr*>(codeline.get());
+        codes += ConditionalStatement(level + 1, conditional);
+    }
+    return codes;
+}
+
+std::string CodeGen::GenCode(int level, Expr* expr){
 
     // Return the number as its text value
     if (NumberExpr* number = dynamic_cast<NumberExpr*>(expr))
@@ -38,8 +118,8 @@ std::string CodeGen::GenCode(Expr* expr){
     // Expression, generate both sides and the operator before printing
     if (BinaryExpr* binary = dynamic_cast<BinaryExpr*>(expr))
     {
-        std::string left = GenCode(binary->Left.get());
-        std::string right = GenCode(binary->Right.get());
+        std::string left = GenCode(0, binary->Left.get());
+        std::string right = GenCode(0, binary->Right.get());
         std::string op = Operator(binary->Operator);
 
         return "(" + left + " " + op + " " + right + ")";
@@ -83,9 +163,27 @@ std::string CodeGen::GenCode(Expr* expr){
     // Variable declaration
     if (VarDecExpr* decl = dynamic_cast<VarDecExpr*>(expr))
     {
-        std::string valueText = GenCode(decl->Value.get()); // Gets the value 
+        std::string valueText = GenCode(0, decl->Value.get()); // Gets the value 
         return decl->Name + " = " + valueText;  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
+
+    if(HandbrakeExpr* hanbrake = dynamic_cast<HandbrakeExpr*>(expr)){
+        return "break";
+    }
+    
+    if(IterationExpr* iteration = dynamic_cast<IterationExpr*>(expr)){
+
+    }
+
+    if(ConditionalStatementStructExpr* iteration = dynamic_cast<ConditionalStatementStructExpr*>(expr)){
+        
+    }
+
+
+    if(ConditionalStatementExpr* iteration = dynamic_cast<ConditionalStatementExpr*>(expr)){
+        
+    }
+
 
     // Creating the list
     if(ListExpr* list = dynamic_cast<ListExpr*>(expr)){
@@ -99,7 +197,7 @@ std::string CodeGen::GenCode(Expr* expr){
                 result += ", ";
             }
 
-            result += GenCode(list->Elements[i].get());
+            result += GenCode(0, list->Elements[i].get());
         }
 
         // Finish list and return result
@@ -109,10 +207,9 @@ std::string CodeGen::GenCode(Expr* expr){
 
 
 
-
     if (ListAtExpr* at = dynamic_cast<ListAtExpr*>(expr))
     {
-        return at->ListName + "[" + GenCode(at->Index.get()) + "]";     // returns name[index]
+        return at->ListName + "[" + GenCode(0, at->Index.get()) + "]";     // returns name[index]
     }
 
     // Length of a list
