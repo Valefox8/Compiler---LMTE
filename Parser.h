@@ -18,6 +18,9 @@ class Parser{
 
     public:
     Parser(std::vector<Token> tokens);      // Constructor 
+    std::unique_ptr<Expr> ParseIteration();
+    std::unique_ptr<Expr> ParseConditionalStatementStructure();
+    std::unique_ptr<Expr> ParseConditionalStatement();
     std::unique_ptr<Expr> ParseComparisonOperator();
     std::unique_ptr<Expr> ParseBooleanOperator();
     std::unique_ptr<Expr> ParseExpression();    // Implements the expressions and returns the expression tree

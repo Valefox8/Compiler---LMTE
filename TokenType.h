@@ -15,6 +15,10 @@ enum class TokenType
     EndOfFile,
     Equals, // assigne value
 
+    // Scope
+    StartOfScope,
+    EndOfScope,
+
     // Variable types
     Vnum,
     Vwords,

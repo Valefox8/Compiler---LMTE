@@ -184,6 +184,14 @@ class IterationExpr : public Expr{
         }
 };
 
+class ConditionalStatementStructExpr : public Expr{
+    public:
+        std::vector<std::unique_ptr<Expr>> ConditionalStatements;
+
+        ConditionalStatementStructExpr(std::vector<std::unique_ptr<Expr>> conditionalStatements){
+            ConditionalStatements = std::move(conditionalStatements);
+        }
+};
 
 class ConditionalStatementExpr : public Expr{
     public:
@@ -193,9 +201,7 @@ class ConditionalStatementExpr : public Expr{
 
         ConditionalStatementExpr(TokenType type, std::unique_ptr<Expr> cond = nullptr, std::vector<std::unique_ptr<Expr>> codeline){
             Type = type;
-            if(cond != nullptr){
-                Condition = std::move(cond);
-            }
+            Condition = std::move(cond);
             Codeline = std::move(codeline);
         }
 };

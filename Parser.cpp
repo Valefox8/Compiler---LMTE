@@ -30,6 +30,87 @@ Token Parser::Advance(){
 // The parse tree is build off the rules where theres an expresion, a term and a factor, where they each get lower.
 
 
+
+// function for iteration
+std::unique_ptr<Expr> Parser::ParseIteration(){
+
+}
+
+// function for conditional statement structure check
+std::unique_ptr<Expr> Parser::ParseConditionalStatementStructure(){
+    std::vector<std::unique_ptr<Expr>> conditionalStatments;
+
+    //enter method at positioin where the conditional statement is
+
+    if(Current().Type == TokenType::IguessIf){
+        conditionalStatments.push_back(ParseConditionalStatement());
+    }
+    else{ // if not if, throw exception
+        throw std::runtime_error("Expect \"if\" but receive" + Current().Value);
+    }
+    
+    //check else if
+    while(Current().Type == TokenType::Guessthis){
+        conditionalStatments.push_back(ParseConditionalStatement());
+    }
+
+    // check else
+    if(Current().Type == TokenType::Guessnot){
+        conditionalStatments.push_back(ParseConditionalStatement());
+    }
+
+    return std::make_unique<ConditionalStatementStructExpr>(conditionalStatments);
+}
+
+//function for conditional statement
+std::unique_ptr<Expr> Parser::ParseConditionalStatement(){
+    // assigne conditional statement type, for creating expr
+    TokenType type = Current().Type;
+
+    Advance();// move from conditional statement key to condition line
+    
+    std::unique_ptr<Expr> condition = nullptr;
+
+    if(type != TokenType::Guessnot){
+        condition = ParseBooleanOperator(); // generate condition
+    }
+    
+    bool closeScope = false;
+
+    std::vector<std::unique_ptr<Expr>> codeline;
+    
+    if(Current().Type == TokenType::StartOfScope){ // check if conditional statement has a scope
+        Advance();
+        while(closeScope == false){
+            
+            codeline.push_back(ParseStatement());
+            
+            // if conditional statement reaches end of line without closing, send error message
+            // else, exit the while loop
+            // it's nested, still need to manage if each line end with ';'
+            
+            if(Current().Type == TokenType::EndOfScope){
+                closeScope = true;
+                Advance();
+            }
+            /* if no ';' at the end of each line, use below condition as error condition
+            if(Current().Type == TokenType::StartOfScope){
+                throw std::runtime_error("Expect closingg ';', but recieve nothing");
+            }
+            */
+            if(Current().Type == TokenType::EndOfFile){
+                throw std::runtime_error("Expect closingg ';', but recieve nothing");
+            }
+        }
+    }
+    else{
+        throw std::runtime_error("Expect ':' but receive nothing");
+    }
+
+    return std::make_unique<ConditionalStatementExpr>(type, condition, codeline);
+}
+
+
 //create a new function for boolean operators
 std::unique_ptr<Expr> Parser::ParseBooleanOperator(){
     std::unique_ptr<Expr> left = ParseComparisonOperator();
@@ -40,6 +121,8 @@ std::unique_ptr<Expr> Parser::ParseBooleanOperator(){
         std::unique_ptr<Expr> right = ParseComparisonOperator();
         left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
     }
+
+    return left;
 }
 
 // create a new function for conditional statement
@@ -134,7 +217,7 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
     if (token.Type == TokenType::LeftParen)
     {
         Advance();      // Advance to next position
-        std::unique_ptr<Expr> inner = ParseExpression();    // Parse the expression with the brackets
+        std::unique_ptr<Expr> inner = ParseBooleanOperator();    // Parse the expression with the brackets
         Advance();  // Adavnce out of the brackets
         return inner;   // Return that expression of the brackets
     }
@@ -169,9 +252,11 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
     }
 
     // conditional statement check
+    // only IguessIf will not throw exception, structure check is inside the method
+    // Check for Guessthis and Guessnot is only for throwing exception
     else if (current == TokenType::IguessIf || current == TokenType::Guessthis || current == TokenType::Guessnot )
     {
-        // add new function to recursively use ParseStatement() tile reach the end of the scope
+        return ParseConditionalStatementStructure();
     }
     
 

@@ -115,6 +115,18 @@ std::vector<Token> Lexer::Tokenize(){
             position++;
             continue;
         }
+        
+        if(current == ':'){
+            tokens.push_back(Token(TokenType::StartOfScope, ":"));
+            position++;
+            continue;
+        }
+
+        if(current == ';'){
+            tokens.push_back(Token(TokenType::EndOfScope, ";"));
+            position++;
+            continue;
+        }
 
         // If its not an expected symbol
         throw std::runtime_error("Lexical error: unexpected character");
