@@ -1,5 +1,6 @@
 #include "CodeGen.h"
 #include <stdexcept>
+#include <iostream>
 
 std::string CodeGen::Operator(TokenType op){
     if(op == TokenType::Add){
@@ -47,18 +48,20 @@ std::string CodeGen::Operator(TokenType op){
 
 // level represents the amount of \t to add
 std::string CodeGen::Iteration(int level, IterationExpr* expr){
+    std::cout<< "Iteration Level: " << level << std::endl;
     std::string tabs = std::string(level, '\t');
     std::string changeline = "\n";
-    std::string codes = tabs + "while(true):";
+    std::string codes = tabs + "while(True):" + changeline;
 
     for(const auto& codeline : expr->Codeline){
-        codes += tabs + GenCode(level + 1, codeline.get()) + changeline;
+        codes += GenCode(level + 1, codeline.get()) + changeline;
     }
 
     return codes;
 }
 
 std::string CodeGen::ConditionalStatement(int level, ConditionalStatementExpr* expr){
+    std::cout<< "CS Level: " << level << std::endl;
     std::string tabs = std::string(level, '\t');
     std::string changeline = "\n";
     
@@ -85,7 +88,7 @@ std::string CodeGen::ConditionalStatement(int level, ConditionalStatementExpr* e
     
 
     for(const auto& codeline : expr->Codeline){
-        codes += tabs + GenCode(level + 1, codeline.get()) + changeline;
+        codes += GenCode(level + 1, codeline.get()) + changeline;
     }
 
     return codes;
@@ -96,7 +99,7 @@ std::string CodeGen::ConditionalStatementStruct(int level, ConditionalStatementS
 
     for(const auto& codeline : expr->ConditionalStatements){
         auto* conditional = dynamic_cast<ConditionalStatementExpr*>(codeline.get());
-        codes += ConditionalStatement(level + 1, conditional);
+        codes += ConditionalStatement(level, conditional);
     }
     return codes;
 }
@@ -104,6 +107,8 @@ std::string CodeGen::ConditionalStatementStruct(int level, ConditionalStatementS
 std::string CodeGen::GenCode(int level, Expr* expr){
 
     // Return the number as its text value
+    std::string tabs = std::string(level, '\t');
+
     if (NumberExpr* number = dynamic_cast<NumberExpr*>(expr))
     {
         return number->Value;
@@ -122,7 +127,7 @@ std::string CodeGen::GenCode(int level, Expr* expr){
         std::string right = GenCode(0, binary->Right.get());
         std::string op = Operator(binary->Operator);
 
-        return "(" + left + " " + op + " " + right + ")";
+        return tabs + "(" + left + " " + op + " " + right + ")";
     }
 
     // Word becomes a Python string, wrapped in quotes
@@ -164,24 +169,19 @@ std::string CodeGen::GenCode(int level, Expr* expr){
     if (VarDecExpr* decl = dynamic_cast<VarDecExpr*>(expr))
     {
         std::string valueText = GenCode(0, decl->Value.get()); // Gets the value 
-        return decl->Name + " = " + valueText;  // Returns and constructs the assignement with the name, equals sign and value we just got
+        return tabs + decl->Name + " = " + valueText;  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
 
-    if(HandbrakeExpr* hanbrake = dynamic_cast<HandbrakeExpr*>(expr)){
-        return "break";
+    if(HandbrakeExpr* handbrake = dynamic_cast<HandbrakeExpr*>(expr)){
+        return tabs + "break";
     }
     
     if(IterationExpr* iteration = dynamic_cast<IterationExpr*>(expr)){
-
+        return Iteration(level, iteration);
     }
 
-    if(ConditionalStatementStructExpr* iteration = dynamic_cast<ConditionalStatementStructExpr*>(expr)){
-        
-    }
-
-
-    if(ConditionalStatementExpr* iteration = dynamic_cast<ConditionalStatementExpr*>(expr)){
-        
+    if(ConditionalStatementStructExpr* conditionalStatementStruct = dynamic_cast<ConditionalStatementStructExpr*>(expr)){
+        return ConditionalStatementStruct(level, conditionalStatementStruct);
     }
 
 
@@ -204,8 +204,6 @@ std::string CodeGen::GenCode(int level, Expr* expr){
         result += "]";
         return result;
     }
-
-
 
     if (ListAtExpr* at = dynamic_cast<ListAtExpr*>(expr))
     {

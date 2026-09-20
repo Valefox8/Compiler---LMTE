@@ -200,7 +200,7 @@ class ConditionalStatementExpr : public Expr{
         std::unique_ptr<Expr> Condition;
         std::vector<std::unique_ptr<Expr>> Codeline;
 
-        ConditionalStatementExpr(TokenType type, std::unique_ptr<Expr> cond = nullptr, std::vector<std::unique_ptr<Expr>> codeline){
+        ConditionalStatementExpr(TokenType type, std::unique_ptr<Expr> cond = nullptr, std::vector<std::unique_ptr<Expr>> codeline = {}){
             Type = type;
             Condition = std::move(cond);
             Codeline = std::move(codeline);

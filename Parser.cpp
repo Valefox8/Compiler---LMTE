@@ -2,6 +2,8 @@
 #include <stdexcept>
 #include "TokenType.h"
 
+#include <iostream>
+
 
 Parser::Parser(std::vector<Token> tokens){
     this->tokens = tokens;    // Initialise tokens
@@ -47,22 +49,22 @@ std::unique_ptr<Expr> Parser::ParseIteration(){
                 closeScope = true;
                 Advance();
             }
-            /* if no ';' at the end of each line, use below condition as error condition
+            /* else if no ';' at the end of each line, use below condition as error condition
             if(Current().Type == TokenType::StartOfScope){
                 throw std::runtime_error("Expect closingg ';', but recieve nothing");
             }
             */
-            if(Current().Type == TokenType::EndOfFile){
-                throw std::runtime_error("Expect closingg ';', but recieve nothing");
+            else if(Current().Type == TokenType::EndOfFile){
+                throw std::runtime_error("Iteration Expect closing ';', but recieve" + Current().Value);
             }
         }
         
     }
     else{
-        throw std::runtime_error("Expect ':' but receive nothing");
+        throw std::runtime_error("Iteration Expect ':' but receive" + Current().Value);
     }
 
-    return std::make_unique<IterationExpr>(codeline);
+    return std::make_unique<IterationExpr>(std::move(codeline));
 }
 
 // function for conditional statement structure check
@@ -70,7 +72,7 @@ std::unique_ptr<Expr> Parser::ParseConditionalStatementStructure(){
     std::vector<std::unique_ptr<Expr>> conditionalStatments;
 
     //enter method at positioin where the conditional statement is
-
+    
     if(Current().Type == TokenType::IguessIf){
         conditionalStatments.push_back(ParseConditionalStatement());
     }
@@ -88,14 +90,13 @@ std::unique_ptr<Expr> Parser::ParseConditionalStatementStructure(){
         conditionalStatments.push_back(ParseConditionalStatement());
     }
 
-    return std::make_unique<ConditionalStatementStructExpr>(conditionalStatments);
+    return std::make_unique<ConditionalStatementStructExpr>(std::move(conditionalStatments));
 }
 
 //function for conditional statement
 std::unique_ptr<Expr> Parser::ParseConditionalStatement(){
     // assigne conditional statement type, for creating expr
     TokenType type = Current().Type;
-
     Advance();// move from conditional statement key to condition line
     
     std::unique_ptr<Expr> condition = nullptr;
@@ -127,16 +128,16 @@ std::unique_ptr<Expr> Parser::ParseConditionalStatement(){
                 throw std::runtime_error("Expect closingg ';', but recieve nothing");
             }
             */
-            if(Current().Type == TokenType::EndOfFile){
-                throw std::runtime_error("Expect closingg ';', but recieve nothing");
+            else if(Current().Type == TokenType::EndOfFile){
+                throw std::runtime_error("Condional Statement Expect closingg ';', but recieve: " + Current().Value);
             }
         }
     }
     else{
-        throw std::runtime_error("Expect ':' but receive nothing");
+        throw std::runtime_error("Condional Statement Expect ':' but receive: " + Current().Value);
     }
 
-    return std::make_unique<ConditionalStatementExpr>(type, condition, codeline);
+    return std::make_unique<ConditionalStatementExpr>(type, std::move(condition), std::move(codeline));
 }
 
 
@@ -212,6 +213,16 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
         return std::make_unique<NumberExpr>(token.Value);   // Return parsed value
     }
 
+    if (token.Type == TokenType::Cake){
+        Advance();
+        return std::make_unique<BooleanExpr>(false);
+    } 
+
+    if (token.Type == TokenType::Real){
+        Advance();
+        return std::make_unique<BooleanExpr>(true);
+    } 
+
     if (token.Type == TokenType::Identifier)    //Check if the token is an identifier
     {
         Advance();  // Advance position
@@ -239,14 +250,13 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
             throw std::runtime_error("Unknown method: " + methodToken.Value);
         }
 
-        if(Current().Type == TokenType::Handbrake){
-            Advance();
-            // Advance(); // if ';' needed for the end of the line
-            return std::make_unique<HandbrakeExpr>();
-        }
-
-
         return std::make_unique<NumberExpr>(name);   // Return parsed value
+    }
+
+    if(Current().Type == TokenType::Handbrake){
+        Advance();
+        // Advance(); // if ';' needed for the end of the line
+        return std::make_unique<HandbrakeExpr>();
     }
 
     if (token.Type == TokenType::LeftParen)
@@ -257,7 +267,7 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
         return inner;   // Return that expression of the brackets
     }
 
-    throw std::runtime_error("Syntax error: unexpected token");
+    throw std::runtime_error("Syntax error: unexpected token: " + Current().Value);
 }
 
 std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
@@ -279,7 +289,6 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
     {
         return ParseVarDec();
     }
-
     // iteration check
     else if (current == TokenType::Forwhencake)
     {

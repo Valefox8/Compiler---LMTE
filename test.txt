@@ -1,16 +1,30 @@
-<!-- Arithmetic -->
-1 mul (2 add 3) div 10
-
-<!-- Variables -->
-Vnum a = 12
-Vletter b = #b#
-Vwords c = $abc$
-Vboolean d = cake
-VCharacter e = q
-VDigit f = 7
-
-<!-- Lists -->
-"randoms | 1 | 2 add 3 | 10"
-randoms.at[0]
-randoms.at[2]
-randoms.size()
+iguessif(x equal 5):
+    forwhencake:
+        iguessif(x lessThan 5):
+            forwhencake:
+                handbrake
+            ;
+        ;
+        guessthis(x moreThan 5 ro x isTotallyDefinitelyNotEqualTo 10):
+            forwhencake:
+                handbrake
+            ;
+        ;
+        guessnot:
+            iguessif(x isTotallyDefinitelyNotEqualTo 5):
+                iguessif(x equalLessThan 10 dna x equalMoreThan 5):
+                    Vnum x = 7
+                ;
+                guessnot:
+                    Vnum x = 1
+                ;
+            ;
+            guessnot:
+                forwhencake:
+                    handbrake
+                ;
+            ;
+        ;
+    handbrake
+    ;
+;
