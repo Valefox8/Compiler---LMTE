@@ -54,7 +54,7 @@ std::string CodeGen::Iteration(int level, IterationExpr* expr){
     std::string codes = tabs + "while(True):" + changeline;
 
     for(const auto& codeline : expr->Codeline){
-        codes += GenCode(level + 1, codeline.get()) + changeline;
+        codes += GenCode(level + 1, codeline.get());
     }
 
     return codes;
@@ -88,7 +88,7 @@ std::string CodeGen::ConditionalStatement(int level, ConditionalStatementExpr* e
     
 
     for(const auto& codeline : expr->Codeline){
-        codes += GenCode(level + 1, codeline.get()) + changeline;
+        codes += GenCode(level + 1, codeline.get());
     }
 
     return codes;
@@ -169,11 +169,11 @@ std::string CodeGen::GenCode(int level, Expr* expr){
     if (VarDecExpr* decl = dynamic_cast<VarDecExpr*>(expr))
     {
         std::string valueText = GenCode(0, decl->Value.get()); // Gets the value 
-        return tabs + decl->Name + " = " + valueText;  // Returns and constructs the assignement with the name, equals sign and value we just got
+        return tabs + decl->Name + " = " + valueText + "\n";  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
 
     if(HandbrakeExpr* handbrake = dynamic_cast<HandbrakeExpr*>(expr)){
-        return tabs + "break";
+        return tabs + "break\n";
     }
     
     if(IterationExpr* iteration = dynamic_cast<IterationExpr*>(expr)){
