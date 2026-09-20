@@ -33,7 +33,36 @@ Token Parser::Advance(){
 
 // function for iteration
 std::unique_ptr<Expr> Parser::ParseIteration(){
+    Advance(); // move to next to check the scope
+    bool closeScope = false;
+    std::vector<std::unique_ptr<Expr>> codeline;
 
+    if(Current().Type == TokenType::StartOfScope){
+        Advance(); // move into the scope
+        while (closeScope == false)
+        {
+            codeline.push_back(ParseStatement());
+            
+            if(Current().Type == TokenType::EndOfScope){
+                closeScope = true;
+                Advance();
+            }
+            /* if no ';' at the end of each line, use below condition as error condition
+            if(Current().Type == TokenType::StartOfScope){
+                throw std::runtime_error("Expect closingg ';', but recieve nothing");
+            }
+            */
+            if(Current().Type == TokenType::EndOfFile){
+                throw std::runtime_error("Expect closingg ';', but recieve nothing");
+            }
+        }
+        
+    }
+    else{
+        throw std::runtime_error("Expect ':' but receive nothing");
+    }
+
+    return std::make_unique<IterationExpr>(codeline);
 }
 
 // function for conditional statement structure check
@@ -210,6 +239,12 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
             throw std::runtime_error("Unknown method: " + methodToken.Value);
         }
 
+        if(Current().Type == TokenType::Handbrake){
+            Advance();
+            // Advance(); // if ';' needed for the end of the line
+            return std::make_unique<HandbrakeExpr>();
+        }
+
 
         return std::make_unique<NumberExpr>(name);   // Return parsed value
     }
@@ -248,7 +283,7 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
     // iteration check
     else if (current == TokenType::Forwhencake)
     {
-        // add new function to recursively use ParseStatement() tile reach the end of the scope
+        return ParseIteration();
     }
 
     // conditional statement check

@@ -226,6 +226,7 @@ Token Lexer::ReadIdOrKey()
         
         // Iteration
         if (value == "forwhencake") return Token(TokenType::Forwhencake, value);
+        if (value == "handbrake") return Token(TokenType::Handbrake, value);
         
         // Conditional Statement
         if (value == "iguessif") return Token(TokenType::IguessIf, value);
