@@ -49,7 +49,7 @@ std::unique_ptr<Expr> Parser::ParseIteration(){
                 closeScope = true;
                 Advance();
             }
-            /* else if no ';' at the end of each line, use below condition as error condition
+            /* if ';' at the end of each line, use below condition as error condition
             if(Current().Type == TokenType::StartOfScope){
                 throw std::runtime_error("Expect closingg ';', but recieve nothing");
             }
@@ -133,7 +133,7 @@ std::unique_ptr<Expr> Parser::ParseConditionalStatement(){
                 closeScope = true;
                 Advance();
             }
-            /* if no ';' at the end of each line, use below condition as error condition
+            /* if ';' at the end of each line, use below condition as error condition
             if(Current().Type == TokenType::StartOfScope){
                 throw std::runtime_error("Expect closingg ';', but recieve nothing");
             }
