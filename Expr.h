@@ -184,16 +184,24 @@ class IterationExpr : public Expr{
         }
 };
 
-// Conditional statements
+/*
+    Structure:
+        <<ConditionalStatement> <>>
+*/
 class ConditionalStatementStructExpr : public Expr{
     public:
         std::vector<std::unique_ptr<Expr>> ConditionalStatements;
 
+        // use Expr because already restrict input expr to if else statements in ParseStatement()
         ConditionalStatementStructExpr(std::vector<std::unique_ptr<Expr>> conditionalStatements){
             ConditionalStatements = std::move(conditionalStatements);
         }
 };
 
+/*
+    Structure:
+        <TokenType> <Condition> <<Codeline>, <Codeline>, <Codeline> ...>
+*/
 class ConditionalStatementExpr : public Expr{
     public:
         TokenType Type;

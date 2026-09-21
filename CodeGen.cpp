@@ -48,7 +48,10 @@ std::string CodeGen::Operator(TokenType op){
 
 // level represents the amount of \t to add
 std::string CodeGen::Iteration(int level, IterationExpr* expr){
+    /*
     std::cout<< "Iteration Level: " << level << std::endl;
+    */
+    
     std::string tabs = std::string(level, '\t');
     std::string changeline = "\n";
     std::string codes = tabs + "while(True):" + changeline;
@@ -61,7 +64,10 @@ std::string CodeGen::Iteration(int level, IterationExpr* expr){
 }
 
 std::string CodeGen::ConditionalStatement(int level, ConditionalStatementExpr* expr){
+    /*
     std::cout<< "CS Level: " << level << std::endl;
+    */
+    
     std::string tabs = std::string(level, '\t');
     std::string changeline = "\n";
     
@@ -127,6 +133,7 @@ std::string CodeGen::GenCode(int level, Expr* expr){
         std::string right = GenCode(0, binary->Right.get());
         std::string op = Operator(binary->Operator);
 
+        //adds tabs for python standard
         return tabs + "(" + left + " " + op + " " + right + ")";
     }
 

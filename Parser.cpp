@@ -103,6 +103,16 @@ std::unique_ptr<Expr> Parser::ParseConditionalStatement(){
 
     if(type != TokenType::Guessnot){
         condition = ParseBooleanOperator(); // generate condition
+        // check if it's valid condition
+        if (BinaryExpr* be = dynamic_cast<BinaryExpr*>(condition.get())){
+            std::cout<< "Condition Valid" << std::endl;
+        }
+        else if(BooleanExpr* be = dynamic_cast<BooleanExpr*>(condition.get())){
+            std::cout << "Condition Valid" << std::endl;
+        }
+        else{
+            throw std::runtime_error("Invalid Condition, exprect structure <variable> <operator> <variable> or boolean value");
+        }
     }
     
     bool closeScope = false;
