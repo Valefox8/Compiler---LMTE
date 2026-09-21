@@ -1,3 +1,34 @@
+
+/*
+    Purpose:
+        Classes for code structure, used for CodeGen to
+        read and output as python standard code
+
+    Version Comtrol:
+        Added Classes:
+            class HandbrakeExpr : public Expr
+            class IterationExpr : public Expr
+            class ConditionalStatementStructExpr : public Expr
+            class ConditionalStatementExpr : public Expr
+
+    Components:
+        class Expr                                              -> Default destructor
+        class NumberExpr : public Expr                          -> Value for number
+        class IdentifierExpr : public Expr                      -> Value for identifier
+        class BinaryExpr : public Expr                          -> Codeline structural as equation or comparison
+        class WordExpr : public Expr                            -> Value for strings
+        class LetterExpr : public Expr                          -> Value for characters
+        class DigitExpr : public Expr                           -> Value for single digit
+        class VarDecExpr : public Expr                          -> Variable declaration
+        class ListExpr : public Expr                            -> List declaration and value assign
+        class ListAtExpr : public Expr                          -> Equivelent to listname[position]
+        class HandbrakeExpr : public Expr                       -> break
+        class IterationExpr : public Expr                       -> while(True)
+        class ConditionalStatementStructExpr : public Expr      -> if elif else structure
+        class ConditionalStatementExpr : public Expr            -> if elif else statment
+*/
+
+
 #ifndef EXPR_H
 #define EXPR_H
 
@@ -38,6 +69,10 @@ public:
     }
 };
 
+/*
+    Structure:
+        <Expr> <Operator> <Expr>
+*/
 class BinaryExpr : public Expr      // Identifies an expression // This is the structure for a 3 prong (number operator number) // Three address code
 {
 public:
@@ -114,6 +149,10 @@ public:
 };
 
 // The bigger fucntion for variable dec
+/*
+    Strucutre:
+        <TokenType> <Variable Name> <Value>
+*/
 class VarDecExpr : public Expr{
     public:
         // The 3 parts of variable dec (type, name and value)
@@ -132,6 +171,10 @@ class VarDecExpr : public Expr{
 
 // THESE ARE FOR THE LIST IMPLEMENTATION
 // List expression function
+/*
+    Structure:
+        <List Name> <<Expr>, <Expr> ...>
+*/
 class ListExpr : public Expr{
     public:
         std::string Name;
@@ -142,6 +185,12 @@ class ListExpr : public Expr{
             Elements = std::move(elements);
         }
 };
+
+/*
+    Structure:
+        <List Name> <Number || BinaryExpr(only arthimetic)>
+        // need to add runtime_error
+*/
 
 class ListAtExpr : public Expr{
     public:
@@ -167,6 +216,10 @@ class ListSizeExpr : public Expr{
 
 
 // Iteration components
+
+/*
+    break only
+*/
 class HandbrakeExpr : public Expr{
     public:
         std::string Value;
@@ -175,6 +228,10 @@ class HandbrakeExpr : public Expr{
         }
 };
 
+/*
+    Structure:
+        <<Expr>, <Expr> ...>
+*/
 class IterationExpr : public Expr{
     public:
         std::vector<std::unique_ptr<Expr>> Codeline;
@@ -186,7 +243,7 @@ class IterationExpr : public Expr{
 
 /*
     Structure:
-        <<ConditionalStatement> <>>
+        <<ConditionalStatement>, <ConditionalStatement> ...>
 */
 class ConditionalStatementStructExpr : public Expr{
     public:

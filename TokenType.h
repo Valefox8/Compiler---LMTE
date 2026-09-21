@@ -1,3 +1,15 @@
+/*
+    Purpose:
+        Enum Class for reference TokenType
+
+    Version Comtrol:
+        No added function
+        No changed function
+
+    Components:
+        All type of Token
+*/
+
 #ifndef TOKEN_TYPE_H
 #define TOKEN_TYPE_H
 
