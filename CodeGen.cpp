@@ -167,6 +167,25 @@ std::string CodeGen::GenCode(Expr* expr){
     {
         return "return " + GenCode(leave->Value.get());
     }
+    // Function call
+    if (FunctionCallExpr* call = dynamic_cast<FunctionCallExpr*>(expr))
+    {
+        std::string result = call->Name + "(";
+
+        for (size_t i = 0; i < call->Args.size(); i++)
+        {
+            if (i > 0)
+            {
+                result += ", ";
+            }
+
+            result += GenCode(call->Args[i].get());
+        }
+
+        result += ")";
+        return result;
+    }
+
 
     // Unknown type 
     throw std::runtime_error("Unknown expression type");

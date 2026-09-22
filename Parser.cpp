@@ -64,6 +64,11 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
     {
         return ParseList();
     }
+    
+    if (token.Type == TokenType::Call)                           // Check if its the start of a function call
+    {
+        return ParseFunctionCall();
+    }
 
     if (token.Type == TokenType::Number)    // Check if number
     {
@@ -265,6 +270,8 @@ std::unique_ptr<Expr> Parser::ParseFunctionDec(){
         }
     }
 
+    functionArity[name] = (int)params.size();   // Save the parameter count, so a function can call itself
+
     Advance();      // Move past the ':'
 
     std::vector<std::unique_ptr<Expr>> body;
@@ -293,4 +300,40 @@ std::unique_ptr<Expr> Parser::ParseFunctionDec(){
 std::unique_ptr<Expr> Parser::ParseReturn(){
     Advance();      // Move past leave
     return std::make_unique<ReturnExpr>(ParseExpression());
+}
+
+// Follows grammer rule   <FunctionCall> -> f <FunctionName> <ArgumentList>
+
+std::unique_ptr<Expr> Parser::ParseFunctionCall(){
+    Advance();      // Move past the 'f'
+
+    Token nameToken = Advance();        // Get the function name
+    std::string name = nameToken.Value;
+
+    if (functionArity.count(name) == 0)     // The function was never declared
+    {
+        throw std::runtime_error("Cannot Recognize " + name);
+    }
+
+    int expected = functionArity[name];     // How many arguments this function takes
+
+    std::vector<std::unique_ptr<Expr>> args;
+
+    // Read exactly as many arguments as the declaration had parameters.
+    for (int i = 0; i < expected; i++)
+    {
+        if (i > 0)
+        {
+            if (Current().Type != TokenType::Separator)
+            {
+                throw std::runtime_error("Function " + name + " did not get enough arguments");
+            }
+
+            Advance();   // Move past the '|'
+        }
+
+        args.push_back(ParseExpression());
+    }
+
+    return std::make_unique<FunctionCallExpr>(name, std::move(args));
 }

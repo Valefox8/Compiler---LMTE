@@ -47,6 +47,7 @@ enum class TokenType
     // Defining Functions
     Function, // "function" keyword
     Leave,    // "leave" keyword
+    Call,    // "f" keyword to begin a function call
 };
 
 #endif

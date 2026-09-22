@@ -239,6 +239,7 @@ Token Lexer::ReadIdOrKey()
         // Function keywords
         if (value == "FUNCTION") return Token(TokenType::Function, value);
         if (value == "leave") return Token(TokenType::Leave, value);
+        if (value == "f") return Token(TokenType::Call, value);
 
         // Failsafe to treat as an identifier if it doesnt hit any of the above
         return Token(TokenType::Identifier, value);

@@ -180,6 +180,18 @@ class FunctionDecExpr : public Expr{
         }
 };
 
+class FunctionCallExpr : public Expr{
+    public:
+        std::string Name;                            // The function being called
+        std::vector<std::unique_ptr<Expr>> Args;     // The arguments passed to it
+
+        FunctionCallExpr(std::string name, std::vector<std::unique_ptr<Expr>> args)
+        {
+            Name = name;
+            Args = std::move(args);
+        }
+};
+
 class ReturnExpr : public Expr{     // Leave keyword
     public:
         std::unique_ptr<Expr> Value;

@@ -5,11 +5,14 @@
 #include <memory>
 #include "Token.h"
 #include "Expr.h"
+#include <map>
+#include <string>
 
 class Parser{
     private:
     std::vector<Token> tokens;      // The entire token list
     int position;                   // Tracking the index in tokens
+    std::map<std::string, int> functionArity;   // Remembers how many parameters each function was declared with
 
     Token Current();                // Returns the token at the position
     Token Advance();                // Returns the position token and increments the position
@@ -25,7 +28,7 @@ class Parser{
     std::unique_ptr<Expr> ParseList();         // also self explanitory by the name 
     std::unique_ptr<Expr> ParseFunctionDec();   // Parses a FUNCTION declaration
     std::unique_ptr<Expr> ParseReturn();        // Parses a 'leave' statement
-
+    std::unique_ptr<Expr> ParseFunctionCall();   // Parses an 'f' function call
 };
 
 
