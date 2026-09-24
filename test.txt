@@ -25,5 +25,9 @@ Vnum age = f Addition 3 | 5
 CMyVehicle:
 FUNCTION SELF Vnum speed | Vnum value:
 public Vnum self.speed = speed,
-public Vnum self.value = value;
+public Vnum self.value = value,
+self.speed = self.speed add 1;
 ;
+
+<!-- Reassignment -->
+a = a add 1

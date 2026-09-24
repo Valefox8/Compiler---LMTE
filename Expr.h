@@ -232,4 +232,29 @@ class ClassDecExpr : public Expr{
             Constructor = std::move(constructor);
         }
 };
+
+// THESE ARE FOR READING AND WRITING VALUES
+class AttributeExpr : public Expr{ // self.speed
+    public:
+        std::string ObjectName; // The thing before the dot, e.g. 'self'
+        std::string Name; // The attribute after the dot, e.g. 'speed'
+
+        AttributeExpr(std::string objectName, std::string name)
+        {
+            ObjectName = objectName;
+            Name = name;
+        }
+};
+
+class AssignExpr : public Expr{ // a = a add 1
+    public:
+        std::unique_ptr<Expr> Target; // An IdentifierExpr or an AttributeExpr
+        std::unique_ptr<Expr> Value; // Whatever it is being set to
+
+        AssignExpr(std::unique_ptr<Expr> target, std::unique_ptr<Expr> value)
+        {
+            Target = std::move(target);
+            Value = std::move(value);
+        }
+};
 #endif

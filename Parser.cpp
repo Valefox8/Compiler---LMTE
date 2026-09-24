@@ -108,11 +108,11 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
                 return std::make_unique<ListAtExpr>(name, std::move(index));
             }
 
-            throw std::runtime_error("Unknown method: " + methodToken.Value);
+            return std::make_unique<AttributeExpr>(name, methodToken.Value); // Anything else after a dot is an attribute like self.speed
         }
 
 
-        return std::make_unique<NumberExpr>(name);   // Return parsed value
+        return std::make_unique<IdentifierExpr>(name); // A variable name
     }
 
     if (token.Type == TokenType::LeftParen)
@@ -166,7 +166,22 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
             return ParseAttributeDec();
         }
 
-        return ParseExpression();       // Otherwise call expression (arithemtic) for now
+        std::unique_ptr<Expr> expr = ParseExpression(); // Could be an expression, or the target of an assignment
+
+        if (Current().Type == TokenType::Equals) // It was a target, so this is a reassignment
+        {
+            if (dynamic_cast<IdentifierExpr*>(expr.get()) == nullptr && dynamic_cast<AttributeExpr*>(expr.get()) == nullptr)
+            {
+                throw std::runtime_error("You cannot assign to that");
+            }
+
+            Advance(); // Move past the '='
+
+            std::unique_ptr<Expr> value = ParseExpression(); // The new value
+            return std::make_unique<AssignExpr>(std::move(expr), std::move(value));
+        }
+
+        return expr;
     }      
 
     // Follows grammer rule     <VariableDeclaration> ->	<VariableType> Identifier = <Expression>

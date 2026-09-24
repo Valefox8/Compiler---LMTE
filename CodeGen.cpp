@@ -219,6 +219,18 @@ std::string CodeGen::GenCode(Expr* expr){
         return "self." + attribute->Name + " = " + GenCode(attribute->Value.get());
     }
 
+    // Attribute, e.g. self.speed
+    if (AttributeExpr* attr = dynamic_cast<AttributeExpr*>(expr))
+    {
+        return attr->ObjectName + "." + attr->Name;
+    }
+
+    // Reassignment
+    if (AssignExpr* assign = dynamic_cast<AssignExpr*>(expr))
+    {
+        return GenCode(assign->Target.get()) + " = " + GenCode(assign->Value.get());
+    }
+
     // Unknown type 
     throw std::runtime_error("Unknown expression type");
 }
