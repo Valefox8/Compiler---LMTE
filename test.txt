@@ -20,3 +20,10 @@ FUNCTION Addition Vnum num1 | Vnum num2:
 Vnum result = num1 add num2,
 leave result;
 Vnum age = f Addition 3 | 5
+
+<!-- Classes -->
+CMyVehicle:
+FUNCTION SELF Vnum speed | Vnum value:
+public Vnum self.speed = speed,
+public Vnum self.value = value;
+;

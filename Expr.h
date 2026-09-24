@@ -171,12 +171,14 @@ class FunctionDecExpr : public Expr{
         std::string Name;                                        // Function name
         std::vector<std::pair<TokenType, std::string>> Params;   // Parameters type and name
         std::vector<std::unique_ptr<Expr>> Body;                 // The statements inside the scope
-
-        FunctionDecExpr(std::string name, std::vector<std::pair<TokenType, std::string>> params, std::vector<std::unique_ptr<Expr>> body)
+        bool IsMethod;                                           // Whether the function is a method
+        
+        FunctionDecExpr(std::string name, std::vector<std::pair<TokenType, std::string>> params, std::vector<std::unique_ptr<Expr>> body, bool isMethod = false)
         {
             Name = name;
             Params = std::move(params);
             Body = std::move(body);
+            IsMethod = isMethod;
         }
 };
 
@@ -199,6 +201,35 @@ class ReturnExpr : public Expr{     // Leave keyword
         ReturnExpr(std::unique_ptr<Expr> value)
         {
             Value = std::move(value);
+        }
+};
+
+// For implementing classes
+class AttributeDecExpr : public Expr{ // public Vnum self.speed = speed
+    public:
+        TokenType Access; // Public, Private or Protected
+        TokenType VarType; // Vnum, Vwords, other variable types
+        std::string Name; // The attribute name, without the self keyword
+        std::unique_ptr<Expr> Value;
+
+        AttributeDecExpr(TokenType access, TokenType varType, std::string name, std::unique_ptr<Expr> value)
+        {
+            Access = access;
+            VarType = varType;
+            Name = name;
+            Value = std::move(value);
+        }
+};
+
+class ClassDecExpr : public Expr{
+    public:
+        std::string Name; // Class name
+        std::unique_ptr<Expr> Constructor; // A constructor or empty if the class doesn't have one
+
+        ClassDecExpr(std::string name, std::unique_ptr<Expr> constructor)
+        {
+            Name = name;
+            Constructor = std::move(constructor);
         }
 };
 #endif

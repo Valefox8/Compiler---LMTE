@@ -241,6 +241,13 @@ Token Lexer::ReadIdOrKey()
         if (value == "leave") return Token(TokenType::Leave, value);
         if (value == "f") return Token(TokenType::Call, value);
 
+        // Class keywords
+        if (value == "SELF") return Token(TokenType::Self, value);
+        if (value == "public") return Token(TokenType::Public, value);
+        if (value == "private") return Token(TokenType::Private, value);
+        if (value == "protected") return Token(TokenType::Protected, value);
+
+
         // Failsafe to treat as an identifier if it doesnt hit any of the above
         return Token(TokenType::Identifier, value);
     }

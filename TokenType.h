@@ -48,6 +48,12 @@ enum class TokenType
     Function, // "function" keyword
     Leave,    // "leave" keyword
     Call,    // "f" keyword to begin a function call
+
+    // Classes
+    Self,  // "SELF" keyword
+    Public,  // "public" access modifier
+    Private,  // "private" access modifier
+    Protected,  // "protected" access modifier
 };
 
 #endif

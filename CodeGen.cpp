@@ -141,6 +141,16 @@ std::string CodeGen::GenCode(Expr* expr){
     {
         std::string result = "def " + function->Name + "(";
 
+        if (function->IsMethod)
+        {
+            result += "self";
+
+            if (function->Params.size() > 0)
+            {
+                result += ", ";
+            }
+        }
+
         for (size_t i = 0; i < function->Params.size(); i++)
         {
             if (i > 0)
@@ -186,6 +196,28 @@ std::string CodeGen::GenCode(Expr* expr){
         return result;
     }
 
+    // Class declaration
+    if (ClassDecExpr* classDec = dynamic_cast<ClassDecExpr*>(expr))
+    {
+        std::string result = "class " + classDec->Name + ":";
+
+        if (classDec->Constructor)
+        {
+            result += "\n" + Indent(GenCode(classDec->Constructor.get()));
+        }
+        else
+        {
+            result += "\n    pass";
+        }
+
+        return result;
+    }
+
+    // Attribute declaration
+    if (AttributeDecExpr* attribute = dynamic_cast<AttributeDecExpr*>(expr))
+    {
+        return "self." + attribute->Name + " = " + GenCode(attribute->Value.get());
+    }
 
     // Unknown type 
     throw std::runtime_error("Unknown expression type");

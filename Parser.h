@@ -18,6 +18,9 @@ class Parser{
     Token Advance();                // Returns the position token and increments the position
     std::unique_ptr<Expr> ParseTerm();          // Implements the term grammar rule for mul/div/mod tl group them before add/sub
     std::unique_ptr<Expr> ParseFactor();        //  Implements factor grammer rule for numbers, identifiers, etc. Called by parse term
+    Token Peek(); // Returns the next token without moving position
+    std::vector<std::pair<TokenType, std::string>> ParseParams();   // Reads a parameter list up to the ':'
+    std::vector<std::unique_ptr<Expr>> ParseBlock();               // Reads a whole ': statements ;' scope
 
     public:
     Parser(std::vector<Token> tokens);      // Constructor 
@@ -29,6 +32,8 @@ class Parser{
     std::unique_ptr<Expr> ParseFunctionDec();   // Parses a FUNCTION declaration
     std::unique_ptr<Expr> ParseReturn();        // Parses a 'leave' statement
     std::unique_ptr<Expr> ParseFunctionCall();   // Parses an 'f' function call
+    std::unique_ptr<Expr> ParseClassDec(); // Parses class declarations
+    std::unique_ptr<Expr> ParseAttributeDec(); // Parses 'public Vnum self.x = ...'
 };
 
 
