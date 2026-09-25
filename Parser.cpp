@@ -98,8 +98,13 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
             throw std::runtime_error("Unknown method: " + methodToken.Value);
         }
 
+        if (declaredVariables.find(name) == declaredVariables.end())   // 
+        {
+            throw std::runtime_error("Undefined variable: " + name);   // 
+        }
 
-        return std::make_unique<NumberExpr>(name);   // Return parsed value
+
+        return std::make_unique<IdentifierExpr>(name);   // Return parsed value
     }
 
     if (token.Type == TokenType::LeftParen)
@@ -142,6 +147,11 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
         TokenType varType = Advance().Type;     // Saves the type and moves to next value
         Token nameToken = Advance();          // saves the name as a token
         std::string name = nameToken.Value;     // Creates a name string based off the value just found from the token
+
+        if (declaredVariables.find(name) != declaredVariables.end())
+        {
+            throw std::runtime_error("Variable already declared: " + name);
+        }
 
         Advance();                            // Moves on past the =
 
@@ -200,6 +210,8 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
         throw std::runtime_error("Thats not a type lil bro lock in");   // Throws an error if its not a valid type
     }
 
+    declaredVariables[name] = varType;
+
     return std::make_unique<VarDecExpr>(varType, name, std::move(value));       // returns the expression created
  }
 
@@ -225,6 +237,7 @@ std::unique_ptr<Expr> Parser::ParseList(){
     }
 
     Advance();   // move past "
+
 
     return std::make_unique<ListExpr>(name, std::move(elements));   // Make a list expression using the name and element vector
 

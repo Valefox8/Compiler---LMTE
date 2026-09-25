@@ -8,6 +8,9 @@ Vwords c = $abc$
 Vboolean d = cake
 VCharacter e = q
 VDigit f = 7
+VDigit f = 8
+a
+ADsdasd
 
 <!-- Lists -->
 "randoms | 1 | 2 add 3 | 10"

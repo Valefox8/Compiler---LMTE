@@ -5,11 +5,13 @@
 #include <memory>
 #include "Token.h"
 #include "Expr.h"
+#include <map>
 
 class Parser{
     private:
     std::vector<Token> tokens;      // The entire token list
     int position;                   // Tracking the index in tokens
+    std::map<std::string, TokenType> declaredVariables;
 
     Token Current();                // Returns the token at the position
     Token Advance();                // Returns the position token and increments the position
