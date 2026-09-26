@@ -21,6 +21,7 @@ class Parser{
     Token Peek(); // Returns the next token without moving position
     std::vector<std::pair<TokenType, std::string>> ParseParams();   // Reads a parameter list up to the ':'
     std::vector<std::unique_ptr<Expr>> ParseBlock();               // Reads a whole ': statements ;' scope
+    std::unique_ptr<Expr> ParseMethod(TokenType access); // Parses one FUNCTION inside an access section
 
     public:
     Parser(std::vector<Token> tokens);      // Constructor 

@@ -387,6 +387,24 @@ std::unique_ptr<Expr> Parser::ParseFunctionCall(){
     return std::make_unique<FunctionCallExpr>(name, std::move(args));
 }
 
+// Follows grammer rule   <Methods> -> <FunctionDeclaration> | <FunctionDeclaration> <Methods>
+std::unique_ptr<Expr> Parser::ParseMethod(TokenType access){
+    if (Current().Type != TokenType::Function)
+    {
+        throw std::runtime_error("Only FUNCTION declarations are allowed inside an access section");
+    }
+
+    Advance(); // Move past FUNCTION
+
+    Token nameToken = Advance(); // Get the method name
+    std::string name = nameToken.Value;
+
+    std::vector<std::pair<TokenType, std::string>> params = ParseParams();
+    std::vector<std::unique_ptr<Expr>> body = ParseBlock();
+
+    return std::make_unique<FunctionDecExpr>(name, std::move(params), std::move(body), true, access);
+}
+
 // Follows grammer rule   <ClassDeclaration> -> <ClassName> : <ClassMembers> ;
 std::unique_ptr<Expr> Parser::ParseClassDec(){
     Token nameToken = Advance();        // Get the class name
@@ -401,7 +419,7 @@ std::unique_ptr<Expr> Parser::ParseClassDec(){
 
     std::unique_ptr<Expr> constructor;
 
-    if (Current().Type == TokenType::Function && Peek().Type == TokenType::Self)    // FUNCTION SELF is the constructor
+    if (Current().Type == TokenType::Function && Peek().Type == TokenType::Self)
     {
         Advance(); // Move past FUNCTION
         Advance(); // Move past SELF
@@ -412,14 +430,46 @@ std::unique_ptr<Expr> Parser::ParseClassDec(){
         constructor = std::make_unique<FunctionDecExpr>("__init__", std::move(params), std::move(body), true);
     }
 
-    if (Current().Type != TokenType::Semicolon)
+
+       std::vector<std::unique_ptr<Expr>> methods;      // Every method from every access section
+
+    while (Current().Type != TokenType::Semicolon)   // Read access sections until the class closes
     {
-        throw std::runtime_error("Non closed scope: class " + name + " is missing ';'");
+        if (Current().Type == TokenType::EndOfFile)
+        {
+            throw std::runtime_error("Non closed scope: class " + name + " is missing ';'");
+        }
+
+        if (Current().Type != TokenType::Public && Current().Type != TokenType::Private && Current().Type != TokenType::Protected)
+        {
+            throw std::runtime_error("Methods must be inside a public, private or protected section");
+        }
+
+        TokenType access = Advance().Type; // public, private or protected
+
+        if (Current().Type != TokenType::Colon)
+        {
+            throw std::runtime_error("An access section must be followed by ':'");
+        }
+
+        Advance(); // Move past the section's ':'
+
+        while (Current().Type != TokenType::Semicolon) // Read methods until the section closes
+        {
+            if (Current().Type == TokenType::EndOfFile)
+            {
+                throw std::runtime_error("Non closed scope: an access section in " + name + " is missing ';'");
+            }
+
+            methods.push_back(ParseMethod(access));
+        }
+
+        Advance(); // Move past the section's ';'
     }
 
     Advance(); // Move past the class's ';'
 
-    return std::make_unique<ClassDecExpr>(name, std::move(constructor));
+    return std::make_unique<ClassDecExpr>(name, std::move(constructor), std::move(methods));
 }
 
 // Follows grammer rule   <ConstructorStatement> -> <AccessModifier> <VariableType> self.Identifier = <Expression>

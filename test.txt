@@ -27,6 +27,11 @@ FUNCTION SELF Vnum speed | Vnum value:
 public Vnum self.speed = speed,
 public Vnum self.value = value,
 self.speed = self.speed add 1;
+public:
+FUNCTION ACCELERATE Vnum speed1 | Vnum speed2:
+self.speed = speed1 add speed2,
+leave self.speed;
+;
 ;
 
 <!-- Reassignment -->

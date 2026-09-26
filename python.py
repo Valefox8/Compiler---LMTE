@@ -17,3 +17,8 @@ class CMyVehicle:
     def __init__(self, speed, value):
         self.speed = speed
         self.value = value
+        self.speed = (self.speed + 1)
+    def ACCELERATE(self, speed1, speed2):
+        self.speed = (speed1 + speed2)
+        return self.speed
+a = (a + 1)

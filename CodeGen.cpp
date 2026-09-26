@@ -200,12 +200,21 @@ std::string CodeGen::GenCode(Expr* expr){
     if (ClassDecExpr* classDec = dynamic_cast<ClassDecExpr*>(expr))
     {
         std::string result = "class " + classDec->Name + ":";
+        bool hasMembers = false;
 
         if (classDec->Constructor)
         {
             result += "\n" + Indent(GenCode(classDec->Constructor.get()));
+            hasMembers = true;
         }
-        else
+
+        for (size_t i = 0; i < classDec->Methods.size(); i++)
+        {
+            result += "\n" + Indent(GenCode(classDec->Methods[i].get()));
+            hasMembers = true;
+        }
+
+        if (!hasMembers)
         {
             result += "\n    pass";
         }

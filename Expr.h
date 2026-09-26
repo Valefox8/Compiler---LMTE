@@ -171,15 +171,18 @@ class FunctionDecExpr : public Expr{
         std::string Name;                                        // Function name
         std::vector<std::pair<TokenType, std::string>> Params;   // Parameters type and name
         std::vector<std::unique_ptr<Expr>> Body;                 // The statements inside the scope
-        bool IsMethod;                                           // Whether the function is a method
+        bool IsMethod;      
+        TokenType Access; // For accessing in methods, public, private or protected                                     // Whether the function is a method
         
-        FunctionDecExpr(std::string name, std::vector<std::pair<TokenType, std::string>> params, std::vector<std::unique_ptr<Expr>> body, bool isMethod = false)
+        FunctionDecExpr(std::string name, std::vector<std::pair<TokenType, std::string>> params, std::vector<std::unique_ptr<Expr>> body, bool isMethod = false, TokenType access = TokenType::Public)
         {
             Name = name;
             Params = std::move(params);
             Body = std::move(body);
             IsMethod = isMethod;
+            Access = access;
         }
+
 };
 
 class FunctionCallExpr : public Expr{
@@ -225,11 +228,13 @@ class ClassDecExpr : public Expr{
     public:
         std::string Name; // Class name
         std::unique_ptr<Expr> Constructor; // A constructor or empty if the class doesn't have one
+        std::vector<std::unique_ptr<Expr>> Methods;   // Every method in the class
 
-        ClassDecExpr(std::string name, std::unique_ptr<Expr> constructor)
+        ClassDecExpr(std::string name, std::unique_ptr<Expr> constructor, std::vector<std::unique_ptr<Expr>> methods)
         {
             Name = name;
             Constructor = std::move(constructor);
+            Methods = std::move(methods);
         }
 };
 
