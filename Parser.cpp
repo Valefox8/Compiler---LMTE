@@ -161,6 +161,11 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
             return ParseClassDec();
         }
 
+        if (current == TokenType::Identifier && Peek().Type == TokenType::Identifier) // 'CName obj' is an object declaration
+        {
+            return ParseObjectDec();
+        }
+
         if (current == TokenType::Public || current == TokenType::Private || current == TokenType::Protected)   // Attribute declaration
         {
             return ParseAttributeDec();
@@ -351,8 +356,29 @@ std::unique_ptr<Expr> Parser::ParseReturn(){
     return std::make_unique<ReturnExpr>(ParseExpression());
 }
 
-// Follows grammer rule   <FunctionCall> -> f <FunctionName> <ArgumentList>
+// Reads exactly as many arguments as were declared, with a '|' between each.
+std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(int expected, std::string what){
+    std::vector<std::unique_ptr<Expr>> args;
 
+    for (int i = 0; i < expected; i++)
+    {
+        if (i > 0)
+        {
+            if (Current().Type != TokenType::Separator)
+            {
+                throw std::runtime_error(what + " did not get enough arguments");
+            }
+
+            Advance(); // Move past the '|'
+        }
+
+        args.push_back(ParseExpression());
+    }
+
+    return args;
+}
+
+// Follows grammer rule   <FunctionCall> -> f <FunctionName> <ArgumentList>
 std::unique_ptr<Expr> Parser::ParseFunctionCall(){
     Advance();      // Move past the 'f'
 
@@ -366,23 +392,7 @@ std::unique_ptr<Expr> Parser::ParseFunctionCall(){
 
     int expected = functionArity[name];     // How many arguments this function takes
 
-    std::vector<std::unique_ptr<Expr>> args;
-
-    // Read exactly as many arguments as the declaration had parameters.
-    for (int i = 0; i < expected; i++)
-    {
-        if (i > 0)
-        {
-            if (Current().Type != TokenType::Separator)
-            {
-                throw std::runtime_error("Function " + name + " did not get enough arguments");
-            }
-
-            Advance();   // Move past the '|'
-        }
-
-        args.push_back(ParseExpression());
-    }
+    std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, "Function " + name);
 
     return std::make_unique<FunctionCallExpr>(name, std::move(args));
 }
@@ -419,19 +429,19 @@ std::unique_ptr<Expr> Parser::ParseClassDec(){
 
     std::unique_ptr<Expr> constructor;
 
-    if (Current().Type == TokenType::Function && Peek().Type == TokenType::Self)
+    classArity[name] = 0; // A class with no constructor takes no arguments
+
+    if (Current().Type == TokenType::Function && Peek().Type == TokenType::Self) // FUNCTION SELF is the constructor
     {
         Advance(); // Move past FUNCTION
         Advance(); // Move past SELF
-
         std::vector<std::pair<TokenType, std::string>> params = ParseParams();
+        classArity[name] = (int)params.size(); // Remember how many arguments this class is built with
         std::vector<std::unique_ptr<Expr>> body = ParseBlock();
-
         constructor = std::make_unique<FunctionDecExpr>("__init__", std::move(params), std::move(body), true);
     }
 
-
-       std::vector<std::unique_ptr<Expr>> methods;      // Every method from every access section
+    std::vector<std::unique_ptr<Expr>> methods;      // Every method from every access section
 
     while (Current().Type != TokenType::Semicolon)   // Read access sections until the class closes
     {
@@ -494,4 +504,32 @@ std::unique_ptr<Expr> Parser::ParseAttributeDec(){
     std::unique_ptr<Expr> value = ParseExpression();
 
     return std::make_unique<AttributeDecExpr>(access, varType, name, std::move(value));
+}
+
+// Follows grammer rule   <ObjectDeclaration> -> <ClassName> Identifier = <ClassName> <ParameterList>
+std::unique_ptr<Expr> Parser::ParseObjectDec(){
+    Token classToken = Advance(); // The class name on the left
+    std::string className = classToken.Value;
+
+    Token nameToken = Advance(); // obejct name
+    std::string name = nameToken.Value;
+
+    if (classArity.count(className) == 0) // Class was not declared
+    {
+        throw std::runtime_error("Cannot Recognize " + className);
+    }
+
+    Advance(); // Move past the '='
+
+    Token secondToken = Advance();
+    if (secondToken.Value != className)
+    {
+        throw std::runtime_error("Object " + name + " was declared as " + className + " but built as " + secondToken.Value);
+    }
+
+    int expected = classArity[className]; // How many arguments the constructor takes
+
+    std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, "Class " + className);
+
+    return std::make_unique<ObjectDecExpr>(className, name, std::move(args));
 }

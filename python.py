@@ -22,3 +22,4 @@ class CMyVehicle:
         self.speed = (speed1 + speed2)
         return self.speed
 a = (a + 1)
+Ford1 = CMyVehicle(100, 10)

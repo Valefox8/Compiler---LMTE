@@ -240,6 +240,25 @@ std::string CodeGen::GenCode(Expr* expr){
         return GenCode(assign->Target.get()) + " = " + GenCode(assign->Value.get());
     }
 
+    // Object declaration
+    if (ObjectDecExpr* object = dynamic_cast<ObjectDecExpr*>(expr))
+    {
+        std::string result = object->Name + " = " + object->ClassName + "(";
+
+        for (size_t i = 0; i < object->Args.size(); i++)
+        {
+            if (i > 0)
+            {
+                result += ", ";
+            }
+
+            result += GenCode(object->Args[i].get());
+        }
+
+        result += ")";
+        return result;
+    }
+
     // Unknown type 
     throw std::runtime_error("Unknown expression type");
 }

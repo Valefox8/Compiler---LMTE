@@ -262,4 +262,17 @@ class AssignExpr : public Expr{ // a = a add 1
             Value = std::move(value);
         }
 };
+class ObjectDecExpr : public Expr{ // CMyVehicle Ford1 = CMyVehicle 100 | 10
+    public:
+        std::string ClassName; // The class being created
+        std::string Name; // Object name
+        std::vector<std::unique_ptr<Expr>> Args; // constructor arguments
+
+        ObjectDecExpr(std::string className, std::string name, std::vector<std::unique_ptr<Expr>> args)
+        {
+            ClassName = className;
+            Name = name;
+            Args = std::move(args);
+        }
+};
 #endif

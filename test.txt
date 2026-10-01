@@ -36,3 +36,6 @@ leave self.speed;
 
 <!-- Reassignment -->
 a = a add 1
+
+<!-- Objects -->
+CMyVehicle Ford1 = CMyVehicle 100 | 10
