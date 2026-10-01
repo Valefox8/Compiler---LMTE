@@ -41,6 +41,13 @@ std::vector<Token> Lexer::Tokenize(){
             continue;
         }
 
+        if (current == '-' && checkforward("->")) // check for the object arrow
+        {
+            tokens.push_back(Token(TokenType::Arrow, "->"));
+            position += 2; // two characters, not one
+            continue;
+        }
+
         if (current == '$')                        // Check for word start
         {
             tokens.push_back(ReadWord());           // call letter read

@@ -39,3 +39,7 @@ a = a add 1
 
 <!-- Objects -->
 CMyVehicle Ford1 = CMyVehicle 100 | 10
+
+<!-- Object use -->
+Vnum Result = Ford1 -> f ACCELERATE 10 | 20
+Ford1 -> speed

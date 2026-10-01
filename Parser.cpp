@@ -111,6 +111,38 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
             return std::make_unique<AttributeExpr>(name, methodToken.Value); // Anything else after a dot is an attribute like self.speed
         }
 
+        if (Current().Type == TokenType::Arrow){ // Ford1 -> something
+            Advance(); // Move past the '->'
+
+            if (objectClass.count(name) == 0) // The object was never declared
+            {
+                throw std::runtime_error("Cannot Recognize " + name);
+            }
+
+            std::string className = objectClass[name];
+
+            if (Current().Type == TokenType::Call) // Ford1 -> f METHOD args
+            {
+                Advance(); // Move past the 'f'
+
+                Token methodToken = Advance(); // Get the method name
+                std::string methodName = methodToken.Value;
+
+                if (methodArity.count(className + "." + methodName) == 0)
+                {
+                    throw std::runtime_error("Cannot Identify " + methodName);
+                }
+
+                int expected = methodArity[className + "." + methodName];
+
+                std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, "Method " + methodName);
+
+                return std::make_unique<MethodCallExpr>(name, methodName, std::move(args));
+            }
+
+            Token attrToken = Advance(); // Ford1 -> speed is just an attribute
+            return std::make_unique<AttributeExpr>(name, attrToken.Value);
+        }
 
         return std::make_unique<IdentifierExpr>(name); // A variable name
     }
@@ -398,7 +430,7 @@ std::unique_ptr<Expr> Parser::ParseFunctionCall(){
 }
 
 // Follows grammer rule   <Methods> -> <FunctionDeclaration> | <FunctionDeclaration> <Methods>
-std::unique_ptr<Expr> Parser::ParseMethod(TokenType access){
+std::unique_ptr<Expr> Parser::ParseMethod(TokenType access, std::string className){
     if (Current().Type != TokenType::Function)
     {
         throw std::runtime_error("Only FUNCTION declarations are allowed inside an access section");
@@ -410,6 +442,9 @@ std::unique_ptr<Expr> Parser::ParseMethod(TokenType access){
     std::string name = nameToken.Value;
 
     std::vector<std::pair<TokenType, std::string>> params = ParseParams();
+
+    methodArity[className + "." + name] = (int)params.size(); // Keyed by class so two classes can share a method name
+
     std::vector<std::unique_ptr<Expr>> body = ParseBlock();
 
     return std::make_unique<FunctionDecExpr>(name, std::move(params), std::move(body), true, access);
@@ -471,7 +506,7 @@ std::unique_ptr<Expr> Parser::ParseClassDec(){
                 throw std::runtime_error("Non closed scope: an access section in " + name + " is missing ';'");
             }
 
-            methods.push_back(ParseMethod(access));
+            methods.push_back(ParseMethod(access, name));
         }
 
         Advance(); // Move past the section's ';'
@@ -531,5 +566,6 @@ std::unique_ptr<Expr> Parser::ParseObjectDec(){
 
     std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, "Class " + className);
 
+    objectClass[name] = className; // Remember the class so '->' can find its methods
     return std::make_unique<ObjectDecExpr>(className, name, std::move(args));
 }

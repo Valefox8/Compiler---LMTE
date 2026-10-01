@@ -54,6 +54,7 @@ enum class TokenType
     Public,  // "public" access modifier
     Private,  // "private" access modifier
     Protected,  // "protected" access modifier
+    Arrow, // "->" for calling methods and reading attributes on an object
 };
 
 #endif

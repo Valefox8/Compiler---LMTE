@@ -23,3 +23,5 @@ class CMyVehicle:
         return self.speed
 a = (a + 1)
 Ford1 = CMyVehicle(100, 10)
+Result = Ford1.ACCELERATE(10, 20)
+Ford1.speed

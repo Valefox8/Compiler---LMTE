@@ -275,4 +275,18 @@ class ObjectDecExpr : public Expr{ // CMyVehicle Ford1 = CMyVehicle 100 | 10
             Args = std::move(args);
         }
 };
+
+class MethodCallExpr : public Expr{ // Ford1 -> f ACCELERATE 10 | 20
+    public:
+        std::string ObjectName; // The object being called on
+        std::string MethodName; // The method being called
+        std::vector<std::unique_ptr<Expr>> Args; // The arguments passed to it
+
+        MethodCallExpr(std::string objectName, std::string methodName, std::vector<std::unique_ptr<Expr>> args)
+        {
+            ObjectName = objectName;
+            MethodName = methodName;
+            Args = std::move(args);
+        }
+};
 #endif

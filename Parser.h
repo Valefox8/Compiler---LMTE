@@ -15,6 +15,8 @@ class Parser{
     std::map<std::string, int> functionArity;   // Remembers how many parameters each function was declared with
     std::map<std::string, int> classArity; // Remembers how many arguments each class's constructor takes
     std::vector<std::unique_ptr<Expr>> ParseArgs(int expected, std::string what); // Reads a '|' separated argument list
+    std::map<std::string, std::string> objectClass; // Remembers which class each object was declared as
+    std::map<std::string, int> methodArity; // How many parameters each method takes, keyed 'CName.MethodName'
 
     Token Current();                // Returns the token at the position
     Token Advance();                // Returns the position token and increments the position
@@ -23,7 +25,7 @@ class Parser{
     Token Peek(); // Returns the next token without moving position
     std::vector<std::pair<TokenType, std::string>> ParseParams();   // Reads a parameter list up to the ':'
     std::vector<std::unique_ptr<Expr>> ParseBlock();               // Reads a whole ': statements ;' scope
-    std::unique_ptr<Expr> ParseMethod(TokenType access); // Parses one FUNCTION inside an access section
+    std::unique_ptr<Expr> ParseMethod(TokenType access, std::string className); // Parses one FUNCTION inside an access section
 
     public:
     Parser(std::vector<Token> tokens);      // Constructor 
