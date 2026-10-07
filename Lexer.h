@@ -31,8 +31,6 @@
 #include <vector>
 #include "Token.h"
 
-
-
 class Lexer{
     private:
         std::string source; // Input

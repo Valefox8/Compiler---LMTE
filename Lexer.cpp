@@ -115,15 +115,27 @@ std::vector<Token> Lexer::Tokenize(){
             position++;
             continue;
         }
-        
-        if(current == ':'){
-            tokens.push_back(Token(TokenType::StartOfScope, ":"));
+
+        if (current == ',')
+        {
+            // check for , and pushes it
+            tokens.push_back(Token(TokenType::Comma, ","));
             position++;
             continue;
         }
 
-        if(current == ';'){
-            tokens.push_back(Token(TokenType::EndOfScope, ";"));
+        if (current == ':')
+        {
+            // check for : and pushes it
+            tokens.push_back(Token(TokenType::Colon, ":"));
+            position++;
+            continue;
+        }
+
+        if (current == ';')
+        {
+            // check for ; and pushes it
+            tokens.push_back(Token(TokenType::Semicolon, ";"));
             position++;
             continue;
         }
@@ -223,11 +235,16 @@ Token Lexer::ReadIdOrKey()
         // Real and cake identifiers
         if (value == "real") return Token(TokenType::Real, value);
         if (value == "cake") return Token(TokenType::Cake, value);
-        
+
         // Iteration
         if (value == "forwhencake") return Token(TokenType::Forwhencake, value);
         if (value == "handbrake") return Token(TokenType::Handbrake, value);
-        
+
+        // Function keywords
+        if (value == "FUNCTION") return Token(TokenType::Function, value);
+        if (value == "leave") return Token(TokenType::Leave, value);
+        if (value == "f") return Token(TokenType::Call, value);
+
         // Conditional Statement
         if (value == "iguessif") return Token(TokenType::IguessIf, value);
         if (value == "guessthis") return Token(TokenType::Guessthis, value);
@@ -244,7 +261,12 @@ Token Lexer::ReadIdOrKey()
         // Boolean Operator
         if (value == "dna") return Token(TokenType::Dna, value);
         if (value == "ro") return Token(TokenType::Ro, value);
-        
+
+        // Class keywords
+        if (value == "SELF") return Token(TokenType::Self, value);
+        if (value == "public") return Token(TokenType::Public, value);
+        if (value == "private") return Token(TokenType::Private, value);
+        if (value == "protected") return Token(TokenType::Protected, value);
 
 
         // Failsafe to treat as an identifier if it doesnt hit any of the above

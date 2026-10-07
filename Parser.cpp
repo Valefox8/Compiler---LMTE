@@ -20,167 +20,22 @@ Token Parser::Advance(){
     return token;                       // Return token
 }
 
+Token Parser::Peek(){
+    if (position + 1 >= (int)tokens.size()) // Stops reading before the end of the endoffile token
+    {
+        return tokens.back();
+    }
+
+    return tokens[position + 1];
+}
 
 // These follow production rules
-
 //AddOperator -> add | sub
 //MulOperator -> mul | div | mod 
 //Expression -> Term | Expression AddOperator Term 
 //Term -> Factor | Term MulOperator Factor
 //Factor -> Digit* | Identifier | '(' Expression ')' 
-
 // The parse tree is build off the rules where theres an expresion, a term and a factor, where they each get lower.
-
-
-
-// function for iteration
-std::unique_ptr<Expr> Parser::ParseIteration(){
-    Advance(); // move to next to check the scope
-    bool closeScope = false;
-    std::vector<std::unique_ptr<Expr>> codeline;
-
-    if(Current().Type == TokenType::StartOfScope){
-        Advance(); // move into the scope
-        while (closeScope == false)
-        {
-            codeline.push_back(ParseStatement());
-            
-            if(Current().Type == TokenType::EndOfScope){
-                closeScope = true;
-                Advance();
-            }
-            /* if ';' at the end of each line, use below condition as error condition
-            if(Current().Type == TokenType::StartOfScope){
-                throw std::runtime_error("Expect closingg ';', but recieve nothing");
-            }
-            */
-            else if(Current().Type == TokenType::EndOfFile){
-                throw std::runtime_error("Iteration Expect closing ';', but recieve" + Current().Value);
-            }
-        }
-        
-    }
-    else{
-        throw std::runtime_error("Iteration Expect ':' but receive" + Current().Value);
-    }
-
-    return std::make_unique<IterationExpr>(std::move(codeline));
-}
-
-// function for conditional statement structure check
-std::unique_ptr<Expr> Parser::ParseConditionalStatementStructure(){
-    std::vector<std::unique_ptr<Expr>> conditionalStatments;
-
-    //enter method at positioin where the conditional statement is
-    
-    if(Current().Type == TokenType::IguessIf){
-        conditionalStatments.push_back(ParseConditionalStatement());
-    }
-    else{ // if not if, throw exception
-        throw std::runtime_error("Expect \"if\" but receive" + Current().Value);
-    }
-    
-    //check else if
-    while(Current().Type == TokenType::Guessthis){
-        conditionalStatments.push_back(ParseConditionalStatement());
-    }
-
-    // check else
-    if(Current().Type == TokenType::Guessnot){
-        conditionalStatments.push_back(ParseConditionalStatement());
-    }
-
-    return std::make_unique<ConditionalStatementStructExpr>(std::move(conditionalStatments));
-}
-
-//function for conditional statement
-std::unique_ptr<Expr> Parser::ParseConditionalStatement(){
-    // assigne conditional statement type, for creating expr
-    TokenType type = Current().Type;
-    Advance();// move from conditional statement key to condition line
-    
-    std::unique_ptr<Expr> condition = nullptr;
-
-    if(type != TokenType::Guessnot){
-        condition = ParseBooleanOperator(); // generate condition
-        // check if it's valid condition
-        if (BinaryExpr* be = dynamic_cast<BinaryExpr*>(condition.get())){
-            std::cout<< "Condition Valid" << std::endl;
-        }
-        else if(BooleanExpr* be = dynamic_cast<BooleanExpr*>(condition.get())){
-            std::cout << "Condition Valid" << std::endl;
-        }
-        else{
-            throw std::runtime_error("Invalid Condition, exprect structure <variable> <operator> <variable> or boolean value");
-        }
-    }
-    
-    bool closeScope = false;
-
-    std::vector<std::unique_ptr<Expr>> codeline;
-    
-    if(Current().Type == TokenType::StartOfScope){ // check if conditional statement has a scope
-        Advance();
-        while(closeScope == false){
-            
-            codeline.push_back(ParseStatement());
-            
-            // if conditional statement reaches end of line without closing, send error message
-            // else, exit the while loop
-            // it's nested, still need to manage if each line end with ';'
-            
-            if(Current().Type == TokenType::EndOfScope){
-                closeScope = true;
-                Advance();
-            }
-            /* if ';' at the end of each line, use below condition as error condition
-            if(Current().Type == TokenType::StartOfScope){
-                throw std::runtime_error("Expect closingg ';', but recieve nothing");
-            }
-            */
-            else if(Current().Type == TokenType::EndOfFile){
-                throw std::runtime_error("Condional Statement Expect closingg ';', but recieve: " + Current().Value);
-            }
-        }
-    }
-    else{
-        throw std::runtime_error("Condional Statement Expect ':' but receive: " + Current().Value);
-    }
-
-    return std::make_unique<ConditionalStatementExpr>(type, std::move(condition), std::move(codeline));
-}
-
-
-//create a new function for boolean operators
-std::unique_ptr<Expr> Parser::ParseBooleanOperator(){
-    std::unique_ptr<Expr> left = ParseComparisonOperator();
-
-    while(Current().Type == TokenType::Dna || Current().Type == TokenType::Ro)
-    {
-        TokenType op = Advance().Type;
-        std::unique_ptr<Expr> right = ParseComparisonOperator();
-        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
-    }
-
-    return left;
-}
-
-// create a new function for conditional statement
-std::unique_ptr<Expr> Parser::ParseComparisonOperator(){
-    std::unique_ptr<Expr> left = ParseExpression();
-
-    while(Current().Type == TokenType::Equalto || Current().Type == TokenType::Equallessthan || Current().Type == TokenType::Istotallydefinitelynotequalto ||
-        Current().Type == TokenType::Equalmorethan || Current().Type == TokenType::Lessthan || Current().Type == TokenType::Morethan)
-    {
-        TokenType op = Advance().Type;
-        std::unique_ptr<Expr> right = ParseExpression();
-        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
-    }
-    
-    return left;
-}
- 
-
 std::unique_ptr<Expr> Parser::ParseExpression(){
     std::unique_ptr<Expr> left = ParseTerm();   // Parse the first Term 
 
@@ -193,7 +48,6 @@ std::unique_ptr<Expr> Parser::ParseExpression(){
 
     return left;    // Return final result // this will be a term or tree from above loop
 }
-
 
 std::unique_ptr<Expr> Parser::ParseTerm(){
     std::unique_ptr<Expr> left = ParseFactor();    // Parse the first Factor 
@@ -208,13 +62,17 @@ std::unique_ptr<Expr> Parser::ParseTerm(){
     return left;   // Return final result - single Factor or nested tree
 }
 
-
 std::unique_ptr<Expr> Parser::ParseFactor(){
     Token token = Current();    // Get current token
 
     if (token.Type == TokenType::Quote)                          // Check if its the start of a list
     {
         return ParseList();
+    }
+    
+    if (token.Type == TokenType::Call)                           // Check if its the start of a function call
+    {
+        return ParseFunctionCall();
     }
 
     if (token.Type == TokenType::Number)    // Check if number
@@ -232,6 +90,7 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
         Advance();
         return std::make_unique<BooleanExpr>(true);
     } 
+
 
     if (token.Type == TokenType::Identifier)    //Check if the token is an identifier
     {
@@ -256,17 +115,13 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
                 Advance();  // ']'
                 return std::make_unique<ListAtExpr>(name, std::move(index));
             }
-
-            throw std::runtime_error("Unknown method: " + methodToken.Value);
+            
+            // TODO: FIX THIS THING WTF IS IT
+            return std::make_unique<AttributeExpr>(name, methodToken.Value); // Anything else after a dot is an attribute like self.speed
         }
 
-        return std::make_unique<NumberExpr>(name);   // Return parsed value
-    }
 
-    if(Current().Type == TokenType::Handbrake){
-        Advance();
-        // Advance(); // if ';' needed for the end of the line
-        return std::make_unique<HandbrakeExpr>();
+        return std::make_unique<IdentifierExpr>(name); // A variable name
     }
 
     if (token.Type == TokenType::LeftParen)
@@ -277,8 +132,43 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
         return inner;   // Return that expression of the brackets
     }
 
-    throw std::runtime_error("Syntax error: unexpected token: " + Current().Value);
+    throw std::runtime_error("Syntax error: unexpected token" + Current().Value);
 }
+
+// CODE ADDED FROM MARTIN
+std::unique_ptr<Expr> Parser::ParseBooleanOperator(){
+    std::unique_ptr<Expr> left = ParseComparisonOperator();
+
+    while(Current().Type == TokenType::Dna || Current().Type == TokenType::Ro)
+    {
+        TokenType op = Advance().Type;
+        std::unique_ptr<Expr> right = ParseComparisonOperator();
+        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+    }
+
+    return left;
+}
+
+std::unique_ptr<Expr> Parser::ParseComparisonOperator(){
+    std::unique_ptr<Expr> left = ParseExpression();
+
+    while (
+        Current().Type == TokenType::Equalto || 
+        Current().Type == TokenType::Equallessthan || 
+        Current().Type == TokenType::Istotallydefinitelynotequalto ||
+        Current().Type == TokenType::Equalmorethan || 
+        Current().Type == TokenType::Lessthan || 
+        Current().Type == TokenType::Morethan
+    ) {
+        TokenType op = Advance().Type;
+        std::unique_ptr<Expr> right = ParseExpression();
+        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+    }
+    
+    return left;
+}
+// END CODE ADDED FROM MARTIN
+
 
 std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
     std::vector<std::unique_ptr<Expr>> statements;
@@ -291,34 +181,78 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
     return statements;
 }
 
+// TODO: FIX THIS FUNCTION!!!!!
 std::unique_ptr<Expr> Parser::ParseStatement(){
 
     TokenType current = Current().Type;     // Gets the current token type 
 
-    if (current == TokenType::Vnum || current == TokenType::Vwords || current == TokenType::Vboolean || current == TokenType::Vletter || current == TokenType::VCharacter || current == TokenType::VDigit)  // If the token type is a type identifier, call variable declaration
+    if (
+        current == TokenType::Vnum || 
+        current == TokenType::Vwords || 
+        current == TokenType::Vboolean || 
+        current == TokenType::Vletter || 
+        current == TokenType::VCharacter || 
+        current == TokenType::VDigit
+    )  // If the token type is a type identifier, call variable declaration
     {
         return ParseVarDec();
     }
-    // iteration check
-    else if (current == TokenType::Forwhencake)
+
+    if (current == TokenType::Forwhencake)
     {
         return ParseIteration();
     }
 
-    // conditional statement check
-    // only IguessIf will not throw exception, structure check is inside the method
-    // Check for Guessthis and Guessnot is only for throwing exception
-    else if (current == TokenType::IguessIf || current == TokenType::Guessthis || current == TokenType::Guessnot )
+    if (current == TokenType::Handbrake)      // break statement
+    {
+        return ParseBreak();
+    }
+
+    // Pretty big change !!!!!!!!!!!!!!
+    if (current == TokenType::IguessIf)
     {
         return ParseConditionalStatementStructure();
     }
-    
 
-    return ParseBooleanOperator();       // Otherwise call expression (arithemtic) for now
+    if (current == TokenType::Function)   // Function declaration
+    {
+        return ParseFunctionDec();
+    }
+
+    if (current == TokenType::Leave)      // Return statement
+    {
+        return ParseReturn();
+    }
+
+    if (current == TokenType::Identifier && Peek().Type == TokenType::Colon) // CName is a class
+    {
+        return ParseClassDec();
+    }
+
+    if (current == TokenType::Public || current == TokenType::Private || current == TokenType::Protected)   // Attribute declaration
+    {
+        return ParseAttributeDec();
+    }
+
+    std::unique_ptr<Expr> expr = ParseExpression(); // Could be an expression, or the target of an assignment
+
+    if (Current().Type == TokenType::Equals) // It was a target, so this is a reassignment
+    {
+        if (dynamic_cast<IdentifierExpr*>(expr.get()) == nullptr && dynamic_cast<AttributeExpr*>(expr.get()) == nullptr)
+        {
+            throw std::runtime_error("You cannot assign to that");
+        }
+
+        Advance(); // Move past the '='
+
+        std::unique_ptr<Expr> value = ParseExpression(); // The new value
+        return std::make_unique<AssignExpr>(std::move(expr), std::move(value));
+    }
+
+    throw std::runtime_error("Unrecognised expression" + Current().Value);
 }      
 
 // Follows grammer rule     <VariableDeclaration> ->	<VariableType> Identifier = <Expression>
-
 std::unique_ptr<Expr> Parser::ParseVarDec(){
     TokenType varType = Advance().Type;     // Saves the type and moves to next value
     Token nameToken = Advance();          // saves the name as a token
@@ -375,18 +309,15 @@ std::unique_ptr<Expr> Parser::ParseVarDec(){
 
     else if(varType == TokenType::Vnum){
         value = ParseExpression();      // Vnum can be a whole expression or just a value which is covered in parse expression
-    }
-
-    else{
+    } else {
         throw std::runtime_error("Thats not a type lil bro lock in");   // Throws an error if its not a valid type
     }
 
     return std::make_unique<VarDecExpr>(varType, name, std::move(value));       // returns the expression created
- }
+}
 
  // List -> '"' Identifier '|' <ElementList> '"'
  //<ElementList>	-> 	<Element> || <Element> ‘|’ <ElementList>
-
 std::unique_ptr<Expr> Parser::ParseList(){
     Advance();      // Move past the first " 
 
@@ -408,5 +339,275 @@ std::unique_ptr<Expr> Parser::ParseList(){
     Advance();   // move past "
 
     return std::make_unique<ListExpr>(name, std::move(elements));   // Make a list expression using the name and element vector
+}
 
+
+
+// Follows grammer rule   <ParameterList> -> <Parameter> | <Parameter> '|' <ParameterList> | NOTHING
+std::vector<std::pair<TokenType, std::string>> Parser::ParseParams(){
+    std::vector<std::pair<TokenType, std::string>> params;
+
+    while (Current().Type != TokenType::Colon)   // Read parameters until the scope opens
+    {
+        if (Current().Type == TokenType::EndOfFile)
+        {
+            throw std::runtime_error("Non closed scope: missing ':'");
+        }
+
+        TokenType paramType = Advance().Type;       // parameter type
+        std::string paramName = Advance().Value;    // parameter name
+        params.push_back({paramType, paramName});
+
+        if (Current().Type == TokenType::Separator)   // '|' between parameters
+        {
+            Advance();
+        }
+    }
+
+    return params;
+}
+
+
+
+// Reads a whole scope from ':' <StatementList> ';'
+
+std::vector<std::unique_ptr<Expr>> Parser::ParseBlock(){
+
+    if (Advance().Type != TokenType::Colon)   // check if the scope begins with ':'
+        throw std::runtime_error("Non closed scope: missing ':'");
+
+    std::vector<std::unique_ptr<Expr>> body;
+
+    while (Current().Type != TokenType::Semicolon)   // Read statements until the scope closes
+    {
+        if (Current().Type == TokenType::EndOfFile)
+        {
+            throw std::runtime_error("Non closed scope: missing ';'");
+        }
+
+        body.push_back(ParseStatement());
+
+        if (Current().Type == TokenType::Comma)   // ',' between statements
+        {
+            Advance();
+        }
+    }
+
+    Advance();      // Move past the ';'
+
+    return body;
+}
+
+std::unique_ptr<Expr> Parser::ParseIteration(){
+    Advance(); // Move past 'forwhencake'
+    std::vector<std::unique_ptr<Expr>> body = ParseBlock();
+    return std::make_unique<IterationExpr>(std::move(body));
+}
+
+std::unique_ptr<Expr> Parser::ParseBreak(){
+    Advance();      // Move past handbreak
+    return std::make_unique<HandbrakeExpr>();
+}
+
+
+std::unique_ptr<ConditionalStatementExpr> Parser::ParseConditionalStatement(){
+    TokenType type = Current().Type;
+    Advance(); // Move pass ':' to condition line
+
+    std::unique_ptr<Expr> condition = nullptr;
+    if (type != TokenType::Guessnot) {
+        condition = ParseBooleanOperator(); // generate condition
+
+        if (
+            !dynamic_cast<BinaryExpr*>(condition.get()) &&
+            !dynamic_cast<BooleanExpr*>(condition.get())
+        )
+            throw std::runtime_error("Invalid Condition, exprect structure <variable> <operator> <variable> or boolean value");
+    }
+
+    std::vector<std::unique_ptr<Expr>> body = ParseBlock();
+
+    return std::make_unique<ConditionalStatementExpr>(type, std::move(condition), std::move(body));
+}
+
+std::unique_ptr<Expr> Parser::ParseConditionalStatementStructure() {
+    std::vector<std::unique_ptr<ConditionalStatementExpr>> aConditionStatement;
+
+    if (Current().Type == TokenType::IguessIf)
+        aConditionStatement.push_back(ParseConditionalStatement());
+
+    while (Current().Type == TokenType::Guessthis)
+        aConditionStatement.push_back(ParseConditionalStatement());
+
+    if (Current().Type == TokenType::Guessnot)
+        aConditionStatement.push_back(ParseConditionalStatement());
+
+    return std::make_unique<ConditionalStatementStructExpr>(std::move(aConditionStatement));
+}
+// Follows grammer rule   <FunctionDeclaration> -> FUNCTION Identifier <ParameterList>: <StatementList>;
+
+std::unique_ptr<Expr> Parser::ParseFunctionDec(){
+    Advance(); // Move past FUNCTION
+
+    Token nameToken = Advance(); // Get the function name
+    std::string name = nameToken.Value;
+
+    std::vector<std::pair<TokenType, std::string>> params = ParseParams();
+
+    functionArity[name] = (int)params.size(); // Save the parameter count before the body, so a function can call itself
+
+    std::vector<std::unique_ptr<Expr>> body = ParseBlock();
+
+    return std::make_unique<FunctionDecExpr>(name, std::move(params), std::move(body));
+}
+
+// Follows grammer rule   <ReturnStatement> -> leave <Expression>
+std::unique_ptr<Expr> Parser::ParseReturn(){
+    Advance();      // Move past leave
+    return std::make_unique<ReturnExpr>(ParseExpression());
+}
+
+// Follows grammer rule   <FunctionCall> -> f <FunctionName> <ArgumentList>
+
+std::unique_ptr<Expr> Parser::ParseFunctionCall(){
+    Advance();      // Move past the 'f'
+
+    Token nameToken = Advance();        // Get the function name
+    std::string name = nameToken.Value;
+
+    if (functionArity.count(name) == 0)     // The function was never declared
+    {
+        throw std::runtime_error("Cannot Recognize " + name);
+    }
+
+    int expected = functionArity[name];     // How many arguments this function takes
+
+    std::vector<std::unique_ptr<Expr>> args;
+
+    // Read exactly as many arguments as the declaration had parameters.
+    for (int i = 0; i < expected; i++)
+    {
+        if (i > 0)
+        {
+            if (Current().Type != TokenType::Separator)
+            {
+                throw std::runtime_error("Function " + name + " did not get enough arguments");
+            }
+
+            Advance();   // Move past the '|'
+        }
+
+        args.push_back(ParseExpression());
+    }
+
+    return std::make_unique<FunctionCallExpr>(name, std::move(args));
+}
+
+// Follows grammer rule   <Methods> -> <FunctionDeclaration> | <FunctionDeclaration> <Methods>
+std::unique_ptr<Expr> Parser::ParseMethod(TokenType access){
+    if (Current().Type != TokenType::Function)
+    {
+        throw std::runtime_error("Only FUNCTION declarations are allowed inside an access section");
+    }
+
+    Advance(); // Move past FUNCTION
+
+    Token nameToken = Advance(); // Get the method name
+    std::string name = nameToken.Value;
+
+    std::vector<std::pair<TokenType, std::string>> params = ParseParams();
+    std::vector<std::unique_ptr<Expr>> body = ParseBlock();
+
+    return std::make_unique<FunctionDecExpr>(name, std::move(params), std::move(body), true, access);
+}
+
+// Follows grammer rule   <ClassDeclaration> -> <ClassName> : <ClassMembers> ;
+std::unique_ptr<Expr> Parser::ParseClassDec(){
+    Token nameToken = Advance();        // Get the class name
+    std::string name = nameToken.Value;
+
+    if (name.length() < 2 || name[0] != 'C')
+    {
+        throw std::runtime_error("Class names must start with C: " + name);
+    }
+
+    Advance(); // Move past the ':'
+
+    std::unique_ptr<Expr> constructor;
+
+    if (Current().Type == TokenType::Function && Peek().Type == TokenType::Self)
+    {
+        Advance(); // Move past FUNCTION
+        Advance(); // Move past SELF
+
+        std::vector<std::pair<TokenType, std::string>> params = ParseParams();
+        std::vector<std::unique_ptr<Expr>> body = ParseBlock();
+
+        constructor = std::make_unique<FunctionDecExpr>("__init__", std::move(params), std::move(body), true);
+    }
+
+
+       std::vector<std::unique_ptr<Expr>> methods;      // Every method from every access section
+
+    while (Current().Type != TokenType::Semicolon)   // Read access sections until the class closes
+    {
+        if (Current().Type == TokenType::EndOfFile)
+        {
+            throw std::runtime_error("Non closed scope: class " + name + " is missing ';'");
+        }
+
+        if (Current().Type != TokenType::Public && Current().Type != TokenType::Private && Current().Type != TokenType::Protected)
+        {
+            throw std::runtime_error("Methods must be inside a public, private or protected section");
+        }
+
+        TokenType access = Advance().Type; // public, private or protected
+
+        if (Current().Type != TokenType::Colon)
+        {
+            throw std::runtime_error("An access section must be followed by ':'");
+        }
+
+        Advance(); // Move past the section's ':'
+
+        while (Current().Type != TokenType::Semicolon) // Read methods until the section closes
+        {
+            if (Current().Type == TokenType::EndOfFile)
+            {
+                throw std::runtime_error("Non closed scope: an access section in " + name + " is missing ';'");
+            }
+
+            methods.push_back(ParseMethod(access));
+        }
+
+        Advance(); // Move past the section's ';'
+    }
+
+    Advance(); // Move past the class's ';'
+
+    return std::make_unique<ClassDecExpr>(name, std::move(constructor), std::move(methods));
+}
+
+// Follows grammer rule   <ConstructorStatement> -> <AccessModifier> <VariableType> self.Identifier = <Expression>
+
+std::unique_ptr<Expr> Parser::ParseAttributeDec(){
+    TokenType access = Advance().Type; // public, private or protected
+    TokenType varType = Advance().Type; // variable types
+
+    Token selfToken = Advance();
+    if (selfToken.Value != "self")
+    {
+        throw std::runtime_error("Attributes must be declared on self, not " + selfToken.Value);
+    }
+
+    Advance(); // Move past the '.'
+
+    Token nameToken = Advance(); // The attribute name
+    std::string name = nameToken.Value;
+
+    Advance(); // Move past the '='
+
+    std::unique_ptr<Expr> value = ParseExpression();
+
+    return std::make_unique<AttributeDecExpr>(access, varType, name, std::move(value));
 }

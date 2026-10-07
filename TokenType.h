@@ -25,11 +25,7 @@ enum class TokenType
     LeftParen,
     RightParen,
     EndOfFile,
-    Equals, // assigne value
-
-    // Scope
-    StartOfScope,
-    EndOfScope,
+    Equals,
 
     // Variable types
     Vnum,
@@ -74,6 +70,23 @@ enum class TokenType
     Dot,         // "." for .size() and .at()
     LeftBracket,   // [ for .at
     RightBracket,  // ] for .at
+
+    // Scope 
+    Comma, // "," separates statements in  a function
+    Colon, // ":" begins the scope for a function
+    Semicolon, // ";" ends a statement in a function
+
+
+    // Defining Functions
+    Function, // "function" keyword
+    Leave,    // "leave" keyword
+    Call,    // "f" keyword to begin a function call
+
+    // Classes
+    Self,  // "SELF" keyword
+    Public,  // "public" access modifier
+    Private,  // "private" access modifier
+    Protected,  // "protected" access modifier
 };
 
 #endif

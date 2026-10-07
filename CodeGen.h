@@ -58,14 +58,15 @@ class CodeGen
 {
 private:
     std::string Operator(TokenType op);
+    std::string Indent(std::string);
     
-    std::string Iteration(int level, IterationExpr* expr);
-    std::string ConditionalStatementStruct(int level, ConditionalStatementStructExpr* expr);
-    std::string ConditionalStatement(int level, ConditionalStatementExpr* expr);
+    // std::string Iteration(IterationExpr* expr);
+    // std::string ConditionalStatementStruct(ConditionalStatementStructExpr* expr);
+    // std::string ConditionalStatement(ConditionalStatementExpr* expr);
     
 
 public:
-    std::string GenCode(int level, Expr* expr);
+    std::string GenCode(Expr* expr);
 };
 
 #endif

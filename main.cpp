@@ -34,7 +34,7 @@ std::string ReadFile(std::string path){
 // TEST FILE
 int main()
 {
-    std::string path = "test.txt";   // hardcoded file path - change this to whatever you want
+    std::string path = "test2.txt";   // hardcoded file path - change this to whatever you want
     std::string source = ReadFile(path);
 
     // Starts lexer
@@ -42,6 +42,15 @@ int main()
 
     // Tokenizes
     std::vector<Token> tokens = lexer.Tokenize();
+
+    for (Token a_token : tokens)
+    {
+    std::cout << "Current token: "
+            << static_cast<int>(a_token.Type)
+            << " Value: "
+            << a_token.Value
+            << std::endl;
+    }
 
     // Starts parser using the tokens generated previously
     Parser parser(tokens);
@@ -61,7 +70,7 @@ int main()
 
     for (size_t i = 0; i < trees.size(); i++)   // Same loop as before but to file
     {
-        std::string output = generator.GenCode(0, trees[i].get());
+        std::string output = generator.GenCode(trees[i].get());
         outFile << output << std::endl;   // write to the file instead of the terminal
     }
 
