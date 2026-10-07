@@ -45,21 +45,6 @@ std::string CodeGen::Operator(TokenType op){
 
     throw std::runtime_error("Unknown op");
 }
-std::string CodeGen::Indent(std::string text){
-    std::string result = "    ";   // Indent the first line
-
-    for (size_t i = 0; i < text.length(); i++)
-    {
-        result += text[i];
-
-        if (text[i] == '\n')
-        {
-            result += "    ";
-        }
-    }
-
-    return result;
-}
 
 std::string CodeGen::Indent(std::string text){
     std::string result = "    ";   // Indent the first line
@@ -145,8 +130,8 @@ std::string CodeGen::GenCode(Expr* expr){
         return decl->Name + " = " + valueText;  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
 
-    if(HandbrakeExpr* handbrake = dynamic_cast<HandbrakeExpr*>(expr)){
-        return "break\n";
+    if(dynamic_cast<HandbrakeExpr*>(expr)){
+        return "break";
     }
     
     if(IterationExpr* iteration = dynamic_cast<IterationExpr*>(expr))

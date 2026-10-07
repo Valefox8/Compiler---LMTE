@@ -34,7 +34,7 @@ std::string ReadFile(std::string path){
 // TEST FILE
 int main()
 {
-    std::string path = "test2.txt";   // hardcoded file path - change this to whatever you want
+    std::string path = "test.txt";   // hardcoded file path - change this to whatever you want
     std::string source = ReadFile(path);
 
     // Starts lexer

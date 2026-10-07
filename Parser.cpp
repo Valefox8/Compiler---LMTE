@@ -28,14 +28,6 @@ Token Parser::Peek(){
 
     return tokens[position + 1];
 }
-Token Parser::Peek(){
-    if (position + 1 >= (int)tokens.size()) // Stops reading before the end of the endoffile token
-    {
-        return tokens.back();
-    }
-
-    return tokens[position + 1];
-}
 
 // These follow production rules
 //AddOperator -> add | sub
@@ -253,6 +245,7 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
         return ParseConditionalStatementStructure();
     }
 
+
     if (current == TokenType::Function)   // Function declaration
     {
         return ParseFunctionDec();
@@ -266,6 +259,11 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
     if (current == TokenType::Identifier && Peek().Type == TokenType::Colon) // CName is a class
     {
         return ParseClassDec();
+    }
+
+    if (current == TokenType::Identifier && Peek().Type == TokenType::Identifier) // 'CName obj' is an object declaration
+    {
+        return ParseObjectDec();
     }
 
     if (current == TokenType::Public || current == TokenType::Private || current == TokenType::Protected)   // Attribute declaration
@@ -287,47 +285,8 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
         std::unique_ptr<Expr> value = ParseExpression(); // The new value
         return std::make_unique<AssignExpr>(std::move(expr), std::move(value));
     }
-        if (current == TokenType::Function)   // Function declaration
-        {
-            return ParseFunctionDec();
-        }
 
-        if (current == TokenType::Leave)      // Return statement
-        {
-            return ParseReturn();
-        }
-
-        if (current == TokenType::Identifier && Peek().Type == TokenType::Colon) // CName is a class
-        {
-            return ParseClassDec();
-        }
-
-        if (current == TokenType::Identifier && Peek().Type == TokenType::Identifier) // 'CName obj' is an object declaration
-        {
-            return ParseObjectDec();
-        }
-
-        if (current == TokenType::Public || current == TokenType::Private || current == TokenType::Protected)   // Attribute declaration
-        {
-            return ParseAttributeDec();
-        }
-
-        std::unique_ptr<Expr> expr = ParseExpression(); // Could be an expression, or the target of an assignment
-
-        if (Current().Type == TokenType::Equals) // It was a target, so this is a reassignment
-        {
-            if (dynamic_cast<IdentifierExpr*>(expr.get()) == nullptr && dynamic_cast<AttributeExpr*>(expr.get()) == nullptr)
-            {
-                throw std::runtime_error("You cannot assign to that");
-            }
-
-            Advance(); // Move past the '='
-
-            std::unique_ptr<Expr> value = ParseExpression(); // The new value
-            return std::make_unique<AssignExpr>(std::move(expr), std::move(value));
-        }
-
-        return expr;
+    return expr;
 
     throw std::runtime_error("Unrecognised expression" + Current().Value);
 }      
