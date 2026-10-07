@@ -41,6 +41,13 @@ std::vector<Token> Lexer::Tokenize(){
             continue;
         }
 
+        if (current == '-' && checkforward("->")) // check for the object arrow
+        {
+            tokens.push_back(Token(TokenType::Arrow, "->"));
+            position += 2; // two characters, not one
+            continue;
+        }
+
         if (current == '$')                        // Check for word start
         {
             tokens.push_back(ReadWord());           // call letter read
@@ -236,15 +243,19 @@ Token Lexer::ReadIdOrKey()
         if (value == "real") return Token(TokenType::Real, value);
         if (value == "cake") return Token(TokenType::Cake, value);
 
+<<<<<<< HEAD
         // Iteration
         if (value == "forwhencake") return Token(TokenType::Forwhencake, value);
         if (value == "handbrake") return Token(TokenType::Handbrake, value);
 
+=======
+>>>>>>> dragan_branch
         // Function keywords
         if (value == "FUNCTION") return Token(TokenType::Function, value);
         if (value == "leave") return Token(TokenType::Leave, value);
         if (value == "f") return Token(TokenType::Call, value);
 
+<<<<<<< HEAD
         // Conditional Statement
         if (value == "iguessif") return Token(TokenType::IguessIf, value);
         if (value == "guessthis") return Token(TokenType::Guessthis, value);
@@ -262,6 +273,8 @@ Token Lexer::ReadIdOrKey()
         if (value == "dna") return Token(TokenType::Dna, value);
         if (value == "ro") return Token(TokenType::Ro, value);
 
+=======
+>>>>>>> dragan_branch
         // Class keywords
         if (value == "SELF") return Token(TokenType::Self, value);
         if (value == "public") return Token(TokenType::Public, value);

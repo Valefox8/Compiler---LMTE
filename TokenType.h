@@ -71,7 +71,7 @@ enum class TokenType
     LeftBracket,   // [ for .at
     RightBracket,  // ] for .at
 
-    // Scope 
+    // Function scope 
     Comma, // "," separates statements in  a function
     Colon, // ":" begins the scope for a function
     Semicolon, // ";" ends a statement in a function
@@ -87,6 +87,7 @@ enum class TokenType
     Public,  // "public" access modifier
     Private,  // "private" access modifier
     Protected,  // "protected" access modifier
+    Arrow, // "->" for calling methods and reading attributes on an object
 };
 
 #endif

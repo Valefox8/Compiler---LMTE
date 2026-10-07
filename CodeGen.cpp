@@ -45,6 +45,21 @@ std::string CodeGen::Operator(TokenType op){
 
     throw std::runtime_error("Unknown op");
 }
+std::string CodeGen::Indent(std::string text){
+    std::string result = "    ";   // Indent the first line
+
+    for (size_t i = 0; i < text.length(); i++)
+    {
+        result += text[i];
+
+        if (text[i] == '\n')
+        {
+            result += "    ";
+        }
+    }
+
+    return result;
+}
 
 std::string CodeGen::Indent(std::string text){
     std::string result = "    ";   // Indent the first line
@@ -206,6 +221,148 @@ std::string CodeGen::GenCode(Expr* expr){
         return "len(" + size->ListName + ")";   // returns len(name)
     }
      
+    // Function declaration
+    if (FunctionDecExpr* function = dynamic_cast<FunctionDecExpr*>(expr))
+    {
+        std::string result = "def " + function->Name + "(";
+
+        if (function->IsMethod)
+        {
+            result += "self";
+
+            if (function->Params.size() > 0)
+            {
+                result += ", ";
+            }
+        }
+
+        for (size_t i = 0; i < function->Params.size(); i++)
+        {
+            if (i > 0)
+            {
+                result += ", ";
+            }
+
+            result += function->Params[i].second;
+        }
+
+        result += "):";
+
+        // Each statement goes on its own indented line
+        for (size_t i = 0; i < function->Body.size(); i++)
+        {
+            result += "\n" + Indent(GenCode(function->Body[i].get()));
+        }
+
+        return result;
+    }
+
+    // Return statement
+    if (ReturnExpr* leave = dynamic_cast<ReturnExpr*>(expr))
+    {
+        return "return " + GenCode(leave->Value.get());
+    }
+    // Function call
+    if (FunctionCallExpr* call = dynamic_cast<FunctionCallExpr*>(expr))
+    {
+        std::string result = call->Name + "(";
+
+        for (size_t i = 0; i < call->Args.size(); i++)
+        {
+            if (i > 0)
+            {
+                result += ", ";
+            }
+
+            result += GenCode(call->Args[i].get());
+        }
+
+        result += ")";
+        return result;
+    }
+
+    // Class declaration
+    if (ClassDecExpr* classDec = dynamic_cast<ClassDecExpr*>(expr))
+    {
+        std::string result = "class " + classDec->Name + ":";
+        bool hasMembers = false;
+
+        if (classDec->Constructor)
+        {
+            result += "\n" + Indent(GenCode(classDec->Constructor.get()));
+            hasMembers = true;
+        }
+
+        for (size_t i = 0; i < classDec->Methods.size(); i++)
+        {
+            result += "\n" + Indent(GenCode(classDec->Methods[i].get()));
+            hasMembers = true;
+        }
+
+        if (!hasMembers)
+        {
+            result += "\n    pass";
+        }
+
+        return result;
+    }
+
+    // Attribute declaration
+    if (AttributeDecExpr* attribute = dynamic_cast<AttributeDecExpr*>(expr))
+    {
+        return "self." + attribute->Name + " = " + GenCode(attribute->Value.get());
+    }
+
+    // Attribute, e.g. self.speed
+    if (AttributeExpr* attr = dynamic_cast<AttributeExpr*>(expr))
+    {
+        return attr->ObjectName + "." + attr->Name;
+    }
+
+    // Reassignment
+    if (AssignExpr* assign = dynamic_cast<AssignExpr*>(expr))
+    {
+        return GenCode(assign->Target.get()) + " = " + GenCode(assign->Value.get());
+    }
+
+    // Object declaration
+    if (ObjectDecExpr* object = dynamic_cast<ObjectDecExpr*>(expr))
+    {
+        std::string result = object->Name + " = " + object->ClassName + "(";
+
+        for (size_t i = 0; i < object->Args.size(); i++)
+        {
+            if (i > 0)
+            {
+                result += ", ";
+            }
+
+            result += GenCode(object->Args[i].get());
+        }
+
+        result += ")";
+        return result;
+    }
+
+    // Method call on an object
+    if (MethodCallExpr* method = dynamic_cast<MethodCallExpr*>(expr))
+    {
+        std::string result = method->ObjectName + "." + method->MethodName + "(";
+
+        for (size_t i = 0; i < method->Args.size(); i++)
+        {
+            if (i > 0)
+            {
+                result += ", ";
+            }
+
+            result += GenCode(method->Args[i].get());
+        }
+
+        result += ")";
+        return result;
+    }
+
     // Unknown type 
     throw std::runtime_error("Unknown expression type");
 }

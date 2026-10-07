@@ -50,14 +50,20 @@
 #include <memory>
 #include "Token.h"
 #include "Expr.h"
+
 #include <map>
 #include <string>
+
 
 class Parser{
     private:
     std::vector<Token> tokens;      // The entire token list
     int position;                   // Tracking the index in tokens
     std::map<std::string, int> functionArity;   // Remembers how many parameters each function was declared with
+    std::map<std::string, int> classArity; // Remembers how many arguments each class's constructor takes
+    std::vector<std::unique_ptr<Expr>> ParseArgs(int expected, std::string what); // Reads a '|' separated argument list
+    std::map<std::string, std::string> objectClass; // Remembers which class each object was declared as
+    std::map<std::string, int> methodArity; // How many parameters each method takes, keyed 'CName.MethodName'
 
     Token Current();                // Returns the token at the position
     Token Advance();                // Returns the position token and increments the position
@@ -91,6 +97,7 @@ class Parser{
     std::unique_ptr<Expr> ParseFunctionCall();   // Parses an 'f' function call
     std::unique_ptr<Expr> ParseClassDec(); // Parses class declarations
     std::unique_ptr<Expr> ParseAttributeDec(); // Parses 'public Vnum self.x = ...'
+    std::unique_ptr<Expr> ParseObjectDec(); // Parses 'CName obj = CName args'
 };
 
 

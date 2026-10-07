@@ -1,3 +1,49 @@
+<!-- Arithmetic -->
+1 mul (2 add 3) div 10
+
+<!-- Variables -->
+Vnum a = 12
+Vletter b = #b#
+Vwords c = $abc$
+Vboolean d = cake
+VCharacter e = q
+VDigit g = 7
+
+<!-- Lists -->
+"randoms | 1 | 2 add 3 | 10"
+randoms.at[0]
+randoms.at[2]
+randoms.size()
+
+<!-- Functions -->
+FUNCTION Addition Vnum num1 | Vnum num2:
+Vnum result = num1 add num2,
+leave result;
+Vnum age = f Addition 3 | 5
+
+<!-- Classes -->
+CMyVehicle:
+FUNCTION SELF Vnum speed | Vnum value:
+public Vnum self.speed = speed,
+public Vnum self.value = value,
+self.speed = self.speed add 1;
+public:
+FUNCTION ACCELERATE Vnum speed1 | Vnum speed2:
+self.speed = speed1 add speed2,
+leave self.speed;
+;
+;
+
+<!-- Reassignment -->
+a = a add 1
+
+<!-- Objects -->
+CMyVehicle Ford1 = CMyVehicle 100 | 10
+
+<!-- Object use -->
+Vnum Result = Ford1 -> f ACCELERATE 10 | 20
+Ford1 -> speed
+
 iguessif(x equal 5):
     forwhencake:
         iguessif(x lessThan 5):
