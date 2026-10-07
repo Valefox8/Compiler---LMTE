@@ -197,7 +197,6 @@ class ListSizeExpr : public Expr{
     }
 };
 
-<<<<<<< HEAD
 // DONE!!!!
 class IterationExpr : public Expr {
     public: 
@@ -247,8 +246,6 @@ class ConditionalStatementStructExpr : public Expr{
         }
 };
 
-=======
->>>>>>> dragan_branch
 class FunctionDecExpr : public Expr{
     public:
         std::string Name;                                        // Function name
@@ -345,8 +342,6 @@ class AssignExpr : public Expr{ // a = a add 1
             Value = std::move(value);
         }
 };
-<<<<<<< HEAD
-=======
 class ObjectDecExpr : public Expr{ // CMyVehicle Ford1 = CMyVehicle 100 | 10
     public:
         std::string ClassName; // The class being created
@@ -374,5 +369,4 @@ class MethodCallExpr : public Expr{ // Ford1 -> f ACCELERATE 10 | 20
             Args = std::move(args);
         }
 };
->>>>>>> dragan_branch
 #endif

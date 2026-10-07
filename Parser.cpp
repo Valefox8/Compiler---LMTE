@@ -28,6 +28,14 @@ Token Parser::Peek(){
 
     return tokens[position + 1];
 }
+Token Parser::Peek(){
+    if (position + 1 >= (int)tokens.size()) // Stops reading before the end of the endoffile token
+    {
+        return tokens.back();
+    }
+
+    return tokens[position + 1];
+}
 
 // These follow production rules
 //AddOperator -> add | sub
@@ -115,20 +123,13 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
                 Advance();  // ']'
                 return std::make_unique<ListAtExpr>(name, std::move(index));
             }
-<<<<<<< HEAD
-            
-            // TODO: FIX THIS THING WTF IS IT
-=======
 
->>>>>>> dragan_branch
             return std::make_unique<AttributeExpr>(name, methodToken.Value); // Anything else after a dot is an attribute like self.speed
         }
 
         if (Current().Type == TokenType::Arrow){ // Ford1 -> something
             Advance(); // Move past the '->'
 
-<<<<<<< HEAD
-=======
             if (objectClass.count(name) == 0) // The object was never declared
             {
                 throw std::runtime_error("Cannot Recognize " + name);
@@ -159,7 +160,6 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
             return std::make_unique<AttributeExpr>(name, attrToken.Value);
         }
 
->>>>>>> dragan_branch
         return std::make_unique<IdentifierExpr>(name); // A variable name
     }
 
@@ -282,9 +282,11 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
             throw std::runtime_error("You cannot assign to that");
         }
 
-<<<<<<< HEAD
         Advance(); // Move past the '='
-=======
+
+        std::unique_ptr<Expr> value = ParseExpression(); // The new value
+        return std::make_unique<AssignExpr>(std::move(expr), std::move(value));
+    }
         if (current == TokenType::Function)   // Function declaration
         {
             return ParseFunctionDec();
@@ -326,12 +328,6 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
         }
 
         return expr;
-    }      
->>>>>>> dragan_branch
-
-        std::unique_ptr<Expr> value = ParseExpression(); // The new value
-        return std::make_unique<AssignExpr>(std::move(expr), std::move(value));
-    }
 
     throw std::runtime_error("Unrecognised expression" + Current().Value);
 }      
@@ -423,15 +419,8 @@ std::unique_ptr<Expr> Parser::ParseList(){
     Advance();   // move past "
 
     return std::make_unique<ListExpr>(name, std::move(elements));   // Make a list expression using the name and element vector
-<<<<<<< HEAD
-}
-
-
-
-=======
     }
 
->>>>>>> dragan_branch
 // Follows grammer rule   <ParameterList> -> <Parameter> | <Parameter> '|' <ParameterList> | NOTHING
 std::vector<std::pair<TokenType, std::string>> Parser::ParseParams(){
     std::vector<std::pair<TokenType, std::string>> params;
@@ -456,8 +445,7 @@ std::vector<std::pair<TokenType, std::string>> Parser::ParseParams(){
     return params;
 }
 
-<<<<<<< HEAD
-
+// Reads a whole scope from ':' <StatementList> ';'
 
 // Reads a whole scope from ':' <StatementList> ';'
 
@@ -465,12 +453,6 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseBlock(){
 
     if (Advance().Type != TokenType::Colon)   // check if the scope begins with ':'
         throw std::runtime_error("Non closed scope: missing ':'");
-=======
-// Reads a whole scope from ':' <StatementList> ';'
-
-std::vector<std::unique_ptr<Expr>> Parser::ParseBlock(){
-    Advance();      // Move past the ':'
->>>>>>> dragan_branch
 
     std::vector<std::unique_ptr<Expr>> body;
 
@@ -494,7 +476,6 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseBlock(){
     return body;
 }
 
-<<<<<<< HEAD
 std::unique_ptr<Expr> Parser::ParseIteration(){
     Advance(); // Move past 'forwhencake'
     std::vector<std::unique_ptr<Expr>> body = ParseBlock();
@@ -541,8 +522,7 @@ std::unique_ptr<Expr> Parser::ParseConditionalStatementStructure() {
 
     return std::make_unique<ConditionalStatementStructExpr>(std::move(aConditionStatement));
 }
-=======
->>>>>>> dragan_branch
+
 // Follows grammer rule   <FunctionDeclaration> -> FUNCTION Identifier <ParameterList>: <StatementList>;
 
 std::unique_ptr<Expr> Parser::ParseFunctionDec(){
@@ -566,10 +546,6 @@ std::unique_ptr<Expr> Parser::ParseReturn(){
     return std::make_unique<ReturnExpr>(ParseExpression());
 }
 
-<<<<<<< HEAD
-// Follows grammer rule   <FunctionCall> -> f <FunctionName> <ArgumentList>
-
-=======
 // Reads exactly as many arguments as were declared, with a '|' between each.
 std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(int expected, std::string what){
     std::vector<std::unique_ptr<Expr>> args;
@@ -593,7 +569,6 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(int expected, std::string w
 }
 
 // Follows grammer rule   <FunctionCall> -> f <FunctionName> <ArgumentList>
->>>>>>> dragan_branch
 std::unique_ptr<Expr> Parser::ParseFunctionCall(){
     Advance();      // Move past the 'f'
 
@@ -607,37 +582,13 @@ std::unique_ptr<Expr> Parser::ParseFunctionCall(){
 
     int expected = functionArity[name];     // How many arguments this function takes
 
-<<<<<<< HEAD
-    std::vector<std::unique_ptr<Expr>> args;
-
-    // Read exactly as many arguments as the declaration had parameters.
-    for (int i = 0; i < expected; i++)
-    {
-        if (i > 0)
-        {
-            if (Current().Type != TokenType::Separator)
-            {
-                throw std::runtime_error("Function " + name + " did not get enough arguments");
-            }
-
-            Advance();   // Move past the '|'
-        }
-
-        args.push_back(ParseExpression());
-    }
-=======
     std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, "Function " + name);
->>>>>>> dragan_branch
 
     return std::make_unique<FunctionCallExpr>(name, std::move(args));
 }
 
 // Follows grammer rule   <Methods> -> <FunctionDeclaration> | <FunctionDeclaration> <Methods>
-<<<<<<< HEAD
-std::unique_ptr<Expr> Parser::ParseMethod(TokenType access){
-=======
 std::unique_ptr<Expr> Parser::ParseMethod(TokenType access, std::string className){
->>>>>>> dragan_branch
     if (Current().Type != TokenType::Function)
     {
         throw std::runtime_error("Only FUNCTION declarations are allowed inside an access section");
@@ -649,12 +600,9 @@ std::unique_ptr<Expr> Parser::ParseMethod(TokenType access, std::string classNam
     std::string name = nameToken.Value;
 
     std::vector<std::pair<TokenType, std::string>> params = ParseParams();
-<<<<<<< HEAD
-=======
 
     methodArity[className + "." + name] = (int)params.size(); // Keyed by class so two classes can share a method name
 
->>>>>>> dragan_branch
     std::vector<std::unique_ptr<Expr>> body = ParseBlock();
 
     return std::make_unique<FunctionDecExpr>(name, std::move(params), std::move(body), true, access);
@@ -674,21 +622,6 @@ std::unique_ptr<Expr> Parser::ParseClassDec(){
 
     std::unique_ptr<Expr> constructor;
 
-<<<<<<< HEAD
-    if (Current().Type == TokenType::Function && Peek().Type == TokenType::Self)
-    {
-        Advance(); // Move past FUNCTION
-        Advance(); // Move past SELF
-
-        std::vector<std::pair<TokenType, std::string>> params = ParseParams();
-        std::vector<std::unique_ptr<Expr>> body = ParseBlock();
-
-        constructor = std::make_unique<FunctionDecExpr>("__init__", std::move(params), std::move(body), true);
-    }
-
-
-       std::vector<std::unique_ptr<Expr>> methods;      // Every method from every access section
-=======
     classArity[name] = 0; // A class with no constructor takes no arguments
 
     if (Current().Type == TokenType::Function && Peek().Type == TokenType::Self) // FUNCTION SELF is the constructor
@@ -702,7 +635,6 @@ std::unique_ptr<Expr> Parser::ParseClassDec(){
     }
 
     std::vector<std::unique_ptr<Expr>> methods;      // Every method from every access section
->>>>>>> dragan_branch
 
     while (Current().Type != TokenType::Semicolon)   // Read access sections until the class closes
     {
@@ -732,11 +664,7 @@ std::unique_ptr<Expr> Parser::ParseClassDec(){
                 throw std::runtime_error("Non closed scope: an access section in " + name + " is missing ';'");
             }
 
-<<<<<<< HEAD
-            methods.push_back(ParseMethod(access));
-=======
             methods.push_back(ParseMethod(access, name));
->>>>>>> dragan_branch
         }
 
         Advance(); // Move past the section's ';'
@@ -769,8 +697,6 @@ std::unique_ptr<Expr> Parser::ParseAttributeDec(){
     std::unique_ptr<Expr> value = ParseExpression();
 
     return std::make_unique<AttributeDecExpr>(access, varType, name, std::move(value));
-<<<<<<< HEAD
-=======
 }
 
 // Follows grammer rule   <ObjectDeclaration> -> <ClassName> Identifier = <ClassName> <ParameterList>
@@ -800,5 +726,4 @@ std::unique_ptr<Expr> Parser::ParseObjectDec(){
 
     objectClass[name] = className; // Remember the class so '->' can find its methods
     return std::make_unique<ObjectDecExpr>(className, name, std::move(args));
->>>>>>> dragan_branch
 }
