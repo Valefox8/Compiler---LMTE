@@ -43,14 +43,14 @@ int main()
     // Tokenizes
     std::vector<Token> tokens = lexer.Tokenize();
 
-    for (Token a_token : tokens)
-    {
-    std::cout << "Current token: "
-            << static_cast<int>(a_token.Type)
-            << " Value: "
-            << a_token.Value
-            << std::endl;
-    }
+    // for (Token a_token : tokens)
+    // {
+    // std::cout << "Current token: "
+    //         << static_cast<int>(a_token.Type)
+    //         << " Value: "
+    //         << a_token.Value
+    //         << std::endl;
+    // }
 
     // Starts parser using the tokens generated previously
     Parser parser(tokens);

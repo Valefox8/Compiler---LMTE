@@ -125,7 +125,6 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
         // }
 
 
-        return std::make_unique<IdentifierExpr>(name);   // Return parsed value
         if (Current().Type == TokenType::Arrow){ // Ford1 -> something
             Advance(); // Move past the '->'
 
@@ -170,7 +169,7 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
         return inner;   // Return that expression of the brackets
     }
 
-    throw std::runtime_error("Syntax error: unexpected token " + Current().Value);
+    throw std::runtime_error("Syntax error: unexpected token " + Current().Value + Peek().Value + Peek(2).Value);
 }
 
 // CODE ADDED FROM MARTIN
@@ -295,22 +294,18 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
 
     return expr;
 
-<<<<<<< HEAD
-        if (declaredVariables.find(name) != declaredVariables.end())
-        {
-            throw std::runtime_error("Variable already declared: " + name);
-        }
-
-        Advance();                            // Moves on past the =
-=======
 }      
->>>>>>> integration2
 
 // Follows grammer rule     <VariableDeclaration> ->	<VariableType> Identifier = <Expression>
 std::unique_ptr<Expr> Parser::ParseVarDec(){
     TokenType varType = Advance().Type;     // Saves the type and moves to next value
     Token nameToken = Advance();          // saves the name as a token
     std::string name = nameToken.Value;     // Creates a name string based off the value just found from the token
+
+    // if (declaredVariables.find(name) != declaredVariables.end())
+        // {
+        //     throw std::runtime_error("Variable already declared: " + name);
+        // }
 
     Advance();                            // Moves on past the =
 
@@ -390,7 +385,7 @@ std::unique_ptr<Expr> Parser::ParseList(){
     {
         Advance();   // move past '|'
         elements.push_back(ParseExpression());   // next element
-        std::cout << Peek().Value <<  Peek(2).Value<< std::endl;
+
         if (Current().Type == TokenType::Quote && Peek().Type == TokenType::AnotherOne)
         {
             elements.push_back(ParseList());
