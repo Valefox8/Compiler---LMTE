@@ -243,6 +243,9 @@ Token Lexer::ReadIdOrKey()
         if (value == "real") return Token(TokenType::Real, value);
         if (value == "cake") return Token(TokenType::Cake, value);
 
+        // List
+        if (value == "anotherone") return Token(TokenType::AnotherOne, value);
+
         // Iteration
         if (value == "forwhencake") return Token(TokenType::Forwhencake, value);
         if (value == "handbrake") return Token(TokenType::Handbrake, value);

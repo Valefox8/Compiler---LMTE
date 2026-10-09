@@ -20,13 +20,13 @@ Token Parser::Advance(){
     return token;                       // Return token
 }
 
-Token Parser::Peek(){
-    if (position + 1 >= (int)tokens.size()) // Stops reading before the end of the endoffile token
+Token Parser::Peek(size_t pos = 1){
+    if (position + pos >= (int)tokens.size()) // Stops reading before the end of the endoffile token
     {
         return tokens.back();
     }
 
-    return tokens[position + 1];
+    return tokens[position + pos];
 }
 
 // These follow production rules
@@ -163,7 +163,7 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
         return inner;   // Return that expression of the brackets
     }
 
-    throw std::runtime_error("Syntax error: unexpected token" + Current().Value);
+    throw std::runtime_error("Syntax error: unexpected token " + Current().Value);
 }
 
 // CODE ADDED FROM MARTIN
@@ -288,7 +288,6 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
 
     return expr;
 
-    throw std::runtime_error("Unrecognised expression" + Current().Value);
 }      
 
 // Follows grammer rule     <VariableDeclaration> ->	<VariableType> Identifier = <Expression>
@@ -373,6 +372,13 @@ std::unique_ptr<Expr> Parser::ParseList(){
     {
         Advance();   // move past '|'
         elements.push_back(ParseExpression());   // next element
+        std::cout << Peek().Value <<  Peek(2).Value<< std::endl;
+        if (Current().Type == TokenType::Quote && Peek().Type == TokenType::AnotherOne)
+        {
+            elements.push_back(ParseList());
+        }
+        else if (Peek().Type == TokenType::Quote && Peek(2).Type != TokenType::AnotherOne)
+            break;
     }
 
     Advance();   // move past "

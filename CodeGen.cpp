@@ -178,8 +178,15 @@ std::string CodeGen::GenCode(Expr* expr){
     // Creating the list
     if(ListExpr* list = dynamic_cast<ListExpr*>(expr)){
 
+        std::string result;
+
         // Grabs the name and the strat of the python list syntax
-        std::string result = list->Name + " = [";
+        if (list->Name == "anotherone")
+        {
+            result += "[";
+        } else {
+            result += list->Name + " = [";
+        }
 
         // For each element in the elements vector, create a new python list entry 
         for(size_t i = 0; i < list->Elements.size(); i++){
@@ -209,16 +216,31 @@ std::string CodeGen::GenCode(Expr* expr){
     // Function declaration
     if (FunctionDecExpr* function = dynamic_cast<FunctionDecExpr*>(expr))
     {
-        std::string result = "def " + function->Name + "(";
+
+        std::string result = "def ";
 
         if (function->IsMethod)
         {
+            switch (function->Access)
+            {
+                case TokenType::Protected:
+                    result += "_";
+                    break;
+                case TokenType::Private:
+                    result += "__";
+                    break;
+            }
+
+            result += function->Name + "(";
+
             result += "self";
 
             if (function->Params.size() > 0)
             {
                 result += ", ";
             }
+        } else {
+            result += function->Name + "(";
         }
 
         for (size_t i = 0; i < function->Params.size(); i++)
@@ -295,7 +317,19 @@ std::string CodeGen::GenCode(Expr* expr){
     // Attribute declaration
     if (AttributeDecExpr* attribute = dynamic_cast<AttributeDecExpr*>(expr))
     {
-        return "self." + attribute->Name + " = " + GenCode(attribute->Value.get());
+        std::string result = "self.";
+
+        switch (attribute->Access)
+        {
+            case TokenType::Protected:
+                result += "_";
+                break;
+            case TokenType::Private:
+                result += "__";
+                break;
+        }
+
+        return result + attribute->Name + " = " + GenCode(attribute->Value.get());
     }
 
     // Attribute, e.g. self.speed

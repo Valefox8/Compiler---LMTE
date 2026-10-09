@@ -71,7 +71,7 @@ class Parser{
     std::unique_ptr<Expr> ParseFactor();        //  Implements factor grammer rule for numbers, identifiers, etc. Called by parse term
     
     // DRAGAN CODE
-    Token Peek(); // Returns the next token without moving position
+    Token Peek(size_t pos); // Returns the next token without moving position
     std::vector<std::pair<TokenType, std::string>> ParseParams();   // Reads a parameter list up to the ':'
     std::vector<std::unique_ptr<Expr>> ParseBlock();               // Reads a whole ': statements ;' scope
     std::unique_ptr<Expr> ParseMethod(TokenType access, std::string className); // Parses one FUNCTION inside an access section
