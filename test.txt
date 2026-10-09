@@ -1,19 +1,28 @@
 <!-- Arithmetic -->
-1 mul (2 add 3) div 10
 
 <!-- Variables -->
-Vnum a = 12
+Vnum a = 1 mul (2 add 3) div 10
+
 Vletter b = #b#
-Vwords c = $abc$
+Vwords c = $$
 Vboolean d = cake
 VCharacter e = q
-VDigit f = 7
-VDigit f = 8
-a
-ADsdasd
+VDigit g = 9
 
 <!-- Lists -->
-"randoms | 1 | 2 add 3 | 10"
-randoms.at[0]
-randoms.at[2]
-randoms.size()
+"NOTanotherone | 0 | 2 add 3 | 10 | 1"anotherone|1""
+Vnum x= NOTanotherone.at[0]
+
+
+<!-- Classes -->
+CMyVehicle:
+FUNCTION SELF Vnum speed | Vnum value:
+private Vnum self.speed = speed,
+protected Vnum self.value = value,
+self.speed = self.speed add 1;
+private:
+FUNCTION ACCELEATE:
+self.speed = speed1 add speed2,
+leave self.speed;
+;
+;

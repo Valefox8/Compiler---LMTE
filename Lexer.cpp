@@ -41,6 +41,13 @@ std::vector<Token> Lexer::Tokenize(){
             continue;
         }
 
+        if (current == '-' && checkforward("->")) // check for the object arrow
+        {
+            tokens.push_back(Token(TokenType::Arrow, "->"));
+            position += 2; // two characters, not one
+            continue;
+        }
+
         if (current == '$')                        // Check for word start
         {
             tokens.push_back(ReadWord());           // call letter read
@@ -112,6 +119,30 @@ std::vector<Token> Lexer::Tokenize(){
         {
             // check for ] and pushes it
             tokens.push_back(Token(TokenType::RightBracket, "]"));
+            position++;
+            continue;
+        }
+
+        if (current == ',')
+        {
+            // check for , and pushes it
+            tokens.push_back(Token(TokenType::Comma, ","));
+            position++;
+            continue;
+        }
+
+        if (current == ':')
+        {
+            // check for : and pushes it
+            tokens.push_back(Token(TokenType::Colon, ":"));
+            position++;
+            continue;
+        }
+
+        if (current == ';')
+        {
+            // check for ; and pushes it
+            tokens.push_back(Token(TokenType::Semicolon, ";"));
             position++;
             continue;
         }
@@ -211,6 +242,42 @@ Token Lexer::ReadIdOrKey()
         // Real and cake identifiers
         if (value == "real") return Token(TokenType::Real, value);
         if (value == "cake") return Token(TokenType::Cake, value);
+
+        // List
+        if (value == "anotherone") return Token(TokenType::AnotherOne, value);
+
+        // Iteration
+        if (value == "forwhencake") return Token(TokenType::Forwhencake, value);
+        if (value == "handbrake") return Token(TokenType::Handbrake, value);
+
+        // Function keywords
+        if (value == "FUNCTION") return Token(TokenType::Function, value);
+        if (value == "leave") return Token(TokenType::Leave, value);
+        if (value == "f") return Token(TokenType::Call, value);
+
+        // Conditional Statement
+        if (value == "iguessif") return Token(TokenType::IguessIf, value);
+        if (value == "guessthis") return Token(TokenType::Guessthis, value);
+        if (value == "guessnot") return Token(TokenType::Guessnot, value);
+
+        // Comparison Operators
+        if (value == "equal") return Token(TokenType::Equalto, value);
+        if (value == "lessThan") return Token(TokenType::Lessthan, value);
+        if (value == "moreThan") return Token(TokenType::Morethan, value);
+        if (value == "isTotallyDefinitelyNotEqualTo") return Token(TokenType::Istotallydefinitelynotequalto, value);
+        if (value == "equalLessThan") return Token(TokenType::Equallessthan, value);
+        if (value == "equalMoreThan") return Token(TokenType::Equalmorethan, value);
+        
+        // Boolean Operator
+        if (value == "dna") return Token(TokenType::Dna, value);
+        if (value == "ro") return Token(TokenType::Ro, value);
+
+        // Class keywords
+        if (value == "SELF") return Token(TokenType::Self, value);
+        if (value == "public") return Token(TokenType::Public, value);
+        if (value == "private") return Token(TokenType::Private, value);
+        if (value == "protected") return Token(TokenType::Protected, value);
+
 
         // Failsafe to treat as an identifier if it doesnt hit any of the above
         return Token(TokenType::Identifier, value);

@@ -1,3 +1,34 @@
+
+/*
+    Purpose:
+        Classes for code structure, used for CodeGen to
+        read and output as python standard code
+
+    Version Comtrol:
+        Added Classes:
+            class HandbrakeExpr : public Expr
+            class IterationExpr : public Expr
+            class ConditionalStatementStructExpr : public Expr
+            class ConditionalStatementExpr : public Expr
+
+    Components:
+        class Expr                                              -> Default destructor
+        class NumberExpr : public Expr                          -> Value for number
+        class IdentifierExpr : public Expr                      -> Value for identifier
+        class BinaryExpr : public Expr                          -> Codeline structural as equation or comparison
+        class WordExpr : public Expr                            -> Value for strings
+        class LetterExpr : public Expr                          -> Value for characters
+        class DigitExpr : public Expr                           -> Value for single digit
+        class VarDecExpr : public Expr                          -> Variable declaration
+        class ListExpr : public Expr                            -> List declaration and value assign
+        class ListAtExpr : public Expr                          -> Equivelent to listname[position]
+        class HandbrakeExpr : public Expr                       -> break
+        class IterationExpr : public Expr                       -> while(True)
+        class ConditionalStatementStructExpr : public Expr      -> if elif else structure
+        class ConditionalStatementExpr : public Expr            -> if elif else statment
+*/
+
+
 #ifndef EXPR_H
 #define EXPR_H
 
@@ -5,6 +36,7 @@
 #include <memory>
 #include <string>
 #include "TokenType.h"
+#include <utility>
 
 // These are for the parser where it defines the tree node shapes
 
@@ -165,4 +197,176 @@ class ListSizeExpr : public Expr{
     }
 };
 
+// DONE!!!!
+class IterationExpr : public Expr {
+    public: 
+        std::vector<std::unique_ptr<Expr>> Body;
+    
+        IterationExpr(std::vector<std::unique_ptr<Expr>> body)
+        {
+            Body = std::move(body);
+        }
+};
+
+
+// PROBABLY SHOULD BE CAREFUL
+class HandbrakeExpr : public Expr{};
+// class HandbrakeExpr : public Expr {
+// public:
+//     std::unique_ptr<Expr> Expression;
+
+//     HandbrakeExpr(std::unique_ptr<Expr> expression) {
+//         Expression = std::move(expression);
+//     }
+// };
+
+// DONE!!!!!!
+class ConditionalStatementExpr : public Expr{
+    public:
+        TokenType Type;
+        std::unique_ptr<Expr> Condition;
+        std::vector<std::unique_ptr<Expr>> Body;
+
+        ConditionalStatementExpr(TokenType type, std::unique_ptr<Expr> cond = nullptr, std::vector<std::unique_ptr<Expr>> body = {}){
+            Type = type;
+            Condition = std::move(cond);
+            Body = std::move(body);
+        }
+};
+
+
+// TO DO: FIX THE PARSE STATEMENT THING 
+class ConditionalStatementStructExpr : public Expr{
+    public: 
+        std::vector<std::unique_ptr<ConditionalStatementExpr>> ConditionalStatements;
+
+        // use Expr because already restrict input expr to if else statements in ParseStatement()
+        ConditionalStatementStructExpr(std::vector<std::unique_ptr<ConditionalStatementExpr>> conditionalStatements){
+            ConditionalStatements = std::move(conditionalStatements);
+        }
+};
+
+class FunctionDecExpr : public Expr{
+    public:
+        std::string Name;                                        // Function name
+        std::vector<std::pair<TokenType, std::string>> Params;   // Parameters type and name
+        std::vector<std::unique_ptr<Expr>> Body;                 // The statements inside the scope
+        bool IsMethod;      
+        TokenType Access; // For accessing in methods, public, private or protected                                     // Whether the function is a method
+        
+        FunctionDecExpr(std::string name, std::vector<std::pair<TokenType, std::string>> params, std::vector<std::unique_ptr<Expr>> body, bool isMethod = false, TokenType access = TokenType::Public)
+        {
+            Name = name;
+            Params = std::move(params);
+            Body = std::move(body);
+            IsMethod = isMethod;
+            Access = access;
+        }
+
+};
+
+class FunctionCallExpr : public Expr{
+    public:
+        std::string Name;                            // The function being called
+        std::vector<std::unique_ptr<Expr>> Args;     // The arguments passed to it
+
+        FunctionCallExpr(std::string name, std::vector<std::unique_ptr<Expr>> args)
+        {
+            Name = name;
+            Args = std::move(args);
+        }
+};
+
+class ReturnExpr : public Expr{     // Leave keyword
+    public:
+        std::unique_ptr<Expr> Value;
+
+        ReturnExpr(std::unique_ptr<Expr> value)
+        {
+            Value = std::move(value);
+        }
+};
+
+// For implementing classes
+class AttributeDecExpr : public Expr{ // public Vnum self.speed = speed
+    public:
+        TokenType Access; // Public, Private or Protected
+        TokenType VarType; // Vnum, Vwords, other variable types
+        std::string Name; // The attribute name, without the self keyword
+        std::unique_ptr<Expr> Value;
+
+        AttributeDecExpr(TokenType access, TokenType varType, std::string name, std::unique_ptr<Expr> value)
+        {
+            Access = access;
+            VarType = varType;
+            Name = name;
+            Value = std::move(value);
+        }
+};
+
+class ClassDecExpr : public Expr{
+    public:
+        std::string Name; // Class name
+        std::unique_ptr<Expr> Constructor; // A constructor or empty if the class doesn't have one
+        std::vector<std::unique_ptr<Expr>> Methods;   // Every method in the class
+
+        ClassDecExpr(std::string name, std::unique_ptr<Expr> constructor, std::vector<std::unique_ptr<Expr>> methods)
+        {
+            Name = name;
+            Constructor = std::move(constructor);
+            Methods = std::move(methods);
+        }
+};
+
+// THESE ARE FOR READING AND WRITING VALUES
+class AttributeExpr : public Expr{ // self.speed
+    public:
+        std::string ObjectName; // The thing before the dot, e.g. 'self'
+        std::string Name; // The attribute after the dot, e.g. 'speed'
+
+        AttributeExpr(std::string objectName, std::string name)
+        {
+            ObjectName = objectName;
+            Name = name;
+        }
+};
+
+class AssignExpr : public Expr{ // a = a add 1
+    public:
+        std::unique_ptr<Expr> Target; // An IdentifierExpr or an AttributeExpr
+        std::unique_ptr<Expr> Value; // Whatever it is being set to
+
+        AssignExpr(std::unique_ptr<Expr> target, std::unique_ptr<Expr> value)
+        {
+            Target = std::move(target);
+            Value = std::move(value);
+        }
+};
+class ObjectDecExpr : public Expr{ // CMyVehicle Ford1 = CMyVehicle 100 | 10
+    public:
+        std::string ClassName; // The class being created
+        std::string Name; // Object name
+        std::vector<std::unique_ptr<Expr>> Args; // constructor arguments
+
+        ObjectDecExpr(std::string className, std::string name, std::vector<std::unique_ptr<Expr>> args)
+        {
+            ClassName = className;
+            Name = name;
+            Args = std::move(args);
+        }
+};
+
+class MethodCallExpr : public Expr{ // Ford1 -> f ACCELERATE 10 | 20
+    public:
+        std::string ObjectName; // The object being called on
+        std::string MethodName; // The method being called
+        std::vector<std::unique_ptr<Expr>> Args; // The arguments passed to it
+
+        MethodCallExpr(std::string objectName, std::string methodName, std::vector<std::unique_ptr<Expr>> args)
+        {
+            ObjectName = objectName;
+            MethodName = methodName;
+            Args = std::move(args);
+        }
+};
 #endif

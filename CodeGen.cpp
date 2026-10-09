@@ -1,5 +1,6 @@
 #include "CodeGen.h"
 #include <stdexcept>
+#include <iostream>
 
 std::string CodeGen::Operator(TokenType op){
     if(op == TokenType::Add){
@@ -17,13 +18,54 @@ std::string CodeGen::Operator(TokenType op){
     if(op == TokenType::Mod){
         return "%";
     }
+    if(op == TokenType::Dna){
+        return "and";
+    }
+    if(op == TokenType::Ro){
+        return "or";
+    }
+    if(op == TokenType::Equalto){
+        return "==";
+    }
+    if(op == TokenType::Lessthan){
+        return "<";
+    }
+    if(op == TokenType::Morethan){
+        return ">";
+    }
+    if(op == TokenType::Istotallydefinitelynotequalto){
+        return "!=";
+    }
+    if(op == TokenType::Equallessthan){
+        return "<=";
+    }
+    if(op == TokenType::Equalmorethan){
+        return ">=";
+    }
 
     throw std::runtime_error("Unknown op");
+}
+
+std::string CodeGen::Indent(std::string text){
+    std::string result = "    ";   // Indent the first line
+
+    for (size_t i = 0; i < text.length(); i++)
+    {
+        result += text[i];
+
+        if (text[i] == '\n')
+        {
+            result += "    ";
+        }
+    }
+
+    return result;
 }
 
 std::string CodeGen::GenCode(Expr* expr){
 
     // Return the number as its text value
+
     if (NumberExpr* number = dynamic_cast<NumberExpr*>(expr))
     {
         return number->Value;
@@ -42,6 +84,7 @@ std::string CodeGen::GenCode(Expr* expr){
         std::string right = GenCode(binary->Right.get());
         std::string op = Operator(binary->Operator);
 
+        //adds tabs for python standard
         return "(" + left + " " + op + " " + right + ")";
     }
 
@@ -87,11 +130,63 @@ std::string CodeGen::GenCode(Expr* expr){
         return decl->Name + " = " + valueText;  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
 
+    if(dynamic_cast<HandbrakeExpr*>(expr)){
+        return "break";
+    }
+    
+    if(IterationExpr* iteration = dynamic_cast<IterationExpr*>(expr))
+    {
+        std::string result =  "while(True):";
+
+        for (size_t i = 0; i < iteration->Body.size(); i++)
+            result += "\n" + Indent(GenCode(iteration->Body[i].get()));
+                            
+        return result;
+    }
+
+    if(ConditionalStatementStructExpr* conditionalStatementStruct = dynamic_cast<ConditionalStatementStructExpr*>(expr))
+    {    
+        std::string result;
+
+        for(const auto& structIfElseStatements : conditionalStatementStruct->ConditionalStatements){
+            auto* conditionStatement = structIfElseStatements.get();
+            TokenType type = conditionStatement->Type;
+            std::string conditions;
+
+            if (type == TokenType::IguessIf)
+            {
+                conditions = GenCode(conditionStatement->Condition.get());
+                result += "if " + conditions + ":";
+            } else if (type == TokenType::Guessthis) 
+            { 
+                conditions = GenCode(conditionStatement->Condition.get());
+                result += "\nelif " + conditions + ":";
+            } else {
+                result += "\nelse:";
+            }
+            
+            for (size_t i = 0; i < conditionStatement->Body.size(); i++)
+            {
+                result += "\n" + Indent(GenCode(conditionStatement->Body[i].get()));                
+            }                
+
+        }
+        return result;
+    }
+
+
     // Creating the list
     if(ListExpr* list = dynamic_cast<ListExpr*>(expr)){
 
+        std::string result;
+
         // Grabs the name and the strat of the python list syntax
-        std::string result = list->Name + " = [";
+        if (list->Name == "anotherone")
+        {
+            result += "[";
+        } else {
+            result += list->Name + " = [";
+        }
 
         // For each element in the elements vector, create a new python list entry 
         for(size_t i = 0; i < list->Elements.size(); i++){
@@ -107,9 +202,6 @@ std::string CodeGen::GenCode(Expr* expr){
         return result;
     }
 
-
-
-
     if (ListAtExpr* at = dynamic_cast<ListAtExpr*>(expr))
     {
         return at->ListName + "[" + GenCode(at->Index.get()) + "]";     // returns name[index]
@@ -121,6 +213,175 @@ std::string CodeGen::GenCode(Expr* expr){
         return "len(" + size->ListName + ")";   // returns len(name)
     }
      
+    // Function declaration
+    if (FunctionDecExpr* function = dynamic_cast<FunctionDecExpr*>(expr))
+    {
+
+        std::string result = "def ";
+
+        if (function->IsMethod)
+        {
+            switch (function->Access)
+            {
+                case TokenType::Protected:
+                    result += "_";
+                    break;
+                case TokenType::Private:
+                    result += "__";
+                    break;
+            }
+
+            result += function->Name + "(";
+
+            result += "self";
+
+            if (function->Params.size() > 0)
+            {
+                result += ", ";
+            }
+        } else {
+            result += function->Name + "(";
+        }
+
+        for (size_t i = 0; i < function->Params.size(); i++)
+        {
+            if (i > 0)
+            {
+                result += ", ";
+            }
+
+            result += function->Params[i].second;
+        }
+
+        result += "):";
+
+        // Each statement goes on its own indented line
+        for (size_t i = 0; i < function->Body.size(); i++)
+        {
+            result += "\n" + Indent(GenCode(function->Body[i].get()));
+        }
+
+        return result;
+    }
+
+    // Return statement
+    if (ReturnExpr* leave = dynamic_cast<ReturnExpr*>(expr))
+    {
+        return "return " + GenCode(leave->Value.get());
+    }
+    // Function call
+    if (FunctionCallExpr* call = dynamic_cast<FunctionCallExpr*>(expr))
+    {
+        std::string result = call->Name + "(";
+
+        for (size_t i = 0; i < call->Args.size(); i++)
+        {
+            if (i > 0)
+            {
+                result += ", ";
+            }
+
+            result += GenCode(call->Args[i].get());
+        }
+
+        result += ")";
+        return result;
+    }
+
+    // Class declaration
+    if (ClassDecExpr* classDec = dynamic_cast<ClassDecExpr*>(expr))
+    {
+        std::string result = "class " + classDec->Name + ":";
+        bool hasMembers = false;
+
+        if (classDec->Constructor)
+        {
+            result += "\n" + Indent(GenCode(classDec->Constructor.get()));
+            hasMembers = true;
+        }
+
+        for (size_t i = 0; i < classDec->Methods.size(); i++)
+        {
+            result += "\n" + Indent(GenCode(classDec->Methods[i].get()));
+            hasMembers = true;
+        }
+
+        if (!hasMembers)
+        {
+            result += "\n    pass";
+        }
+
+        return result;
+    }
+
+    // Attribute declaration
+    if (AttributeDecExpr* attribute = dynamic_cast<AttributeDecExpr*>(expr))
+    {
+        std::string result = "self.";
+
+        switch (attribute->Access)
+        {
+            case TokenType::Protected:
+                result += "_";
+                break;
+            case TokenType::Private:
+                result += "__";
+                break;
+        }
+
+        return result + attribute->Name + " = " + GenCode(attribute->Value.get());
+    }
+
+    // Attribute, e.g. self.speed
+    if (AttributeExpr* attr = dynamic_cast<AttributeExpr*>(expr))
+    {
+        return attr->ObjectName + "." + attr->Name;
+    }
+
+    // Reassignment
+    if (AssignExpr* assign = dynamic_cast<AssignExpr*>(expr))
+    {
+        return GenCode(assign->Target.get()) + " = " + GenCode(assign->Value.get());
+    }
+
+    // Object declaration
+    if (ObjectDecExpr* object = dynamic_cast<ObjectDecExpr*>(expr))
+    {
+        std::string result = object->Name + " = " + object->ClassName + "(";
+
+        for (size_t i = 0; i < object->Args.size(); i++)
+        {
+            if (i > 0)
+            {
+                result += ", ";
+            }
+
+            result += GenCode(object->Args[i].get());
+        }
+
+        result += ")";
+        return result;
+    }
+
+    // Method call on an object
+    if (MethodCallExpr* method = dynamic_cast<MethodCallExpr*>(expr))
+    {
+        std::string result = method->ObjectName + "." + method->MethodName + "(";
+
+        for (size_t i = 0; i < method->Args.size(); i++)
+        {
+            if (i > 0)
+            {
+                result += ", ";
+            }
+
+            result += GenCode(method->Args[i].get());
+        }
+
+        result += ")";
+        return result;
+    }
+
     // Unknown type 
     throw std::runtime_error("Unknown expression type");
 }
