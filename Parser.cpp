@@ -641,12 +641,12 @@ std::unique_ptr<FunctionCallExpr> Parser::ParseFunctionCall(ClassDecExpr* classE
         funcSymbol = activeScope->LookUp(funcName);
     }
 
-    if (funcSymbol->SymK != SymbolKind::Function) 
+    FunctionDecExpr* funcDecExpr = dynamic_cast<FunctionDecExpr*>(funcSymbol->Expression);
+
+    if (funcSymbol->SymK != SymbolKind::Function || !funcDecExpr) 
     {
         throw std::runtime_error("Cannot find function/method " + funcName);
     }
-
-    FunctionDecExpr* funcDecExpr = dynamic_cast<FunctionDecExpr*>(funcSymbol->Expression);
 
     std::vector<ParameterExpr*> expected = activeScope->GetFunctionPara(funcName);
 
