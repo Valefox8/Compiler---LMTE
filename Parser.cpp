@@ -1,9 +1,4 @@
 #include "Parser.h"
-#include <stdexcept>
-#include "TokenType.h"
-
-#include <iostream>
-
 
 Parser::Parser(std::vector<Token> tokens){
     this->tokens = tokens;    // Initialise tokens
@@ -28,6 +23,7 @@ Token Parser::Peek(size_t pos = 1){
 
     return tokens[position + pos];
 }
+
 
 // These follow production rules
 //AddOperator -> add | sub
@@ -89,12 +85,12 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
     if (token.Type == TokenType::Real){
         Advance();
         return std::make_unique<BooleanExpr>(true);
-    } 
+    }
 
 
     if (token.Type == TokenType::Identifier)    //Check if the token is an identifier
     {
-        Advance();  // Advance position
+        Token next_token = Advance();  // Advance position
         std::string name = token.Value;     // gets list name
 
         if (Current().Type == TokenType::Dot){
@@ -115,43 +111,63 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
                 Advance();  // ']'
                 return std::make_unique<ListAtExpr>(name, std::move(index));
             }
-
-            return std::make_unique<AttributeExpr>(name, methodToken.Value); // Anything else after a dot is an attribute like self.speed
+            throw std::runtime_error("how did we get here: "); // TODO: maybe implement print with this?
         }
+                
 
         if (Current().Type == TokenType::Arrow){ // Ford1 -> something
             Advance(); // Move past the '->'
 
-            if (objectClass.count(name) == 0) // The object was never declared
+            if (!currentScope->Contain(name))   // The object was never declared
             {
                 throw std::runtime_error("Cannot Recognize " + name);
             }
 
-            std::string className = objectClass[name];
+            // Get object expression
+            Expr* symbolExpr = currentScope->LookUp(name)->Expression;   
+            ObjectDecExpr* objExpr = dynamic_cast<ObjectDecExpr*>(symbolExpr);
 
-            if (Current().Type == TokenType::Call) // Ford1 -> f METHOD args
+            // Check if the variable is an object. 
+            // Or if we're currently inside class declaration, check the selfish keyword points to its class
+            if (!objExpr && !dynamic_cast<ClassDecExpr*>(symbolExpr)) 
             {
-                Advance(); // Move past the 'f'
-
-                Token methodToken = Advance(); // Get the method name
-                std::string methodName = methodToken.Value;
-
-                if (methodArity.count(className + "." + methodName) == 0)
-                {
-                    throw std::runtime_error("Cannot Identify " + methodName);
-                }
-
-                int expected = methodArity[className + "." + methodName];
-
-                std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, "Method " + methodName);
-
-                return std::make_unique<MethodCallExpr>(name, methodName, std::move(args));
+                throw std::runtime_error("Variable does not have an arrow expression: " + next_token.Value);
             }
 
-            Token attrToken = Advance(); // Ford1 -> speed is just an attribute
-            return std::make_unique<AttributeExpr>(name, attrToken.Value);
+
+            // Seperate check for object and selfish keyword to get class declaration expression
+            ClassDecExpr* classExpr;
+            if (name != "selfish") {
+                classExpr = objExpr->ClassDefExpr;
+            } else {
+                classExpr = dynamic_cast<ClassDecExpr*>(symbolExpr);
+            }
+
+            // See what object called the '->'
+            std::unique_ptr<Expr> callee = make_unique<IdentifierExpr>(next_token.Value);
+
+            if (Current().Type == TokenType::Call) // Check if its method call Ford1 -> f METHOD args
+            {
+                return ParseFunctionCall(classExpr, std::move(callee));
+            }
+
+            // If its not method call then its an attribute
+            Token attrToken = Advance(); 
+
+            // Check if it is declared
+            SymbolEntry* attSymbol = classExpr->LookUpLocal(attrToken.Value);
+            if (attSymbol->SymK != SymbolKind::Variable) {
+                throw std::runtime_error("Not an attribute: " + next_token.Value);
+            }
+            return std::make_unique<IdentifierExpr>(attSymbol->Name, std::move(callee));
         }
 
+        // If its not an arrow or a dot function then its just a normal variable/parameter
+        // Check if its declared
+        Expr* identifier = currentScope->LookUp(name)->Expression;
+        if (!dynamic_cast<VarDecExpr*>(identifier) && !dynamic_cast<ParameterExpr*>(identifier)){
+            throw std::runtime_error("Undeclared Variable: " + name);
+        }
         return std::make_unique<IdentifierExpr>(name); // A variable name
     }
 
@@ -200,19 +216,17 @@ std::unique_ptr<Expr> Parser::ParseComparisonOperator(){
 }
 // END CODE ADDED FROM MARTIN
 
-
-std::vector<std::unique_ptr<Expr>> Parser::ParseProgram(){
-    std::vector<std::unique_ptr<Expr>> statements;
-
+// Creating the parse tree
+// This is global scope
+std::unique_ptr<ScopeExpr> Parser::ParseProgram(){
     while (Current().Type != TokenType::EndOfFile)
     {
-        statements.push_back(ParseStatement());   // changed from ParseExpression() so we can use statements too
+        GlobalScope->Body.push_back(ParseStatement());   // changed from ParseExpression() so we can use statements too
     }
-
-    return statements;
+    return std::move(GlobalScope);
 }
 
-// TODO: FIX THIS FUNCTION!!!!!
+// Parse each statement/line of code in the program
 std::unique_ptr<Expr> Parser::ParseStatement(){
 
     TokenType current = Current().Type;     // Gets the current token type 
@@ -226,7 +240,7 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
         current == TokenType::VDigit
     )  // If the token type is a type identifier, call variable declaration
     {
-        return ParseVarDec();
+        return ParseVarDec(false, TokenType::Public);
     }
 
     if (current == TokenType::Forwhencake)
@@ -256,26 +270,32 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
         return ParseReturn();
     }
 
-    if (current == TokenType::Identifier && Peek().Type == TokenType::Colon) // CName is a class
-    {
-        return ParseClassDec();
-    }
-
-    if (current == TokenType::Identifier && Peek().Type == TokenType::Identifier) // 'CName obj' is an object declaration
-    {
-        return ParseObjectDec();
-    }
-
-    if (current == TokenType::Public || current == TokenType::Private || current == TokenType::Protected)   // Attribute declaration
+    // Attribute declaration
+    if ((
+        current == TokenType::Public || 
+        current == TokenType::Private || 
+        current == TokenType::Protected) 
+    )   
     {
         return ParseAttributeDec();
     }
 
-    std::unique_ptr<Expr> expr = ParseExpression(); // Could be an expression, or the target of an assignment
+    // Make it so that only identifier starts and ends with 'C' is a class expression
+    if (
+        current == TokenType::Identifier && 
+        Current().Value[0] == 'C' && 
+        Current().Value.back() == 'C'
+    ) 
+    {
+        if (Peek().Type == TokenType::Colon) return ParseClassDec();
+        if (Peek().Type == TokenType::Identifier) return ParseObjectDec();
+    }
+
+    std::unique_ptr<Expr> expr = ParseExpression(); // Could be an expression, or the target of an assignment    
 
     if (Current().Type == TokenType::Equals) // It was a target, so this is a reassignment
     {
-        if (dynamic_cast<IdentifierExpr*>(expr.get()) == nullptr && dynamic_cast<AttributeExpr*>(expr.get()) == nullptr)
+        if (dynamic_cast<Expr*>(expr.get()) == nullptr)
         {
             throw std::runtime_error("You cannot assign to that");
         }
@@ -288,30 +308,22 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
 
     return expr;
 
-}      
+}
 
-// Follows grammer rule     <VariableDeclaration> ->	<VariableType> Identifier = <Expression>
-std::unique_ptr<Expr> Parser::ParseVarDec(){
-    TokenType varType = Advance().Type;     // Saves the type and moves to next value
-    Token nameToken = Advance();          // saves the name as a token
-    std::string name = nameToken.Value;     // Creates a name string based off the value just found from the token
-
-    Advance();                            // Moves on past the =
-
-    std::unique_ptr<Expr> value;    // initialises the value
-
-    if(varType == TokenType::Vwords){
+// Bassically a helper function to make ParseVarDec() shorter.
+std::unique_ptr<Expr> Parser::ParseGetValue(TokenType type){
+    if (type == TokenType::Vwords){
         Token lit = Advance();  // Gets the literal and moves position
-        value = std::make_unique<WordExpr>(lit.Value);  // Saves this value 
+        return std::make_unique<WordExpr>(lit.Value);  // Saves this value 
     }
 
-    else if(varType == TokenType::Vletter)
+    if (type == TokenType::Vletter)
     {
         Token lit = Advance();          // Gets the literal and moves position
-        value = std::make_unique<LetterExpr>(lit.Value);    // Saves this value 
+        return std::make_unique<LetterExpr>(lit.Value);    // Saves this value 
     }
 
-    else if(varType == TokenType::Vboolean)
+    if (type == TokenType::Vboolean)
     {
         Token lit = Advance();          // Gets the literal and moves position
         bool boolValue = NULL;
@@ -322,41 +334,81 @@ std::unique_ptr<Expr> Parser::ParseVarDec(){
             boolValue = false;
         }
 
-        value = std::make_unique<BooleanExpr>(boolValue);    // Saves this value 
+        return std::make_unique<BooleanExpr>(boolValue);    // Saves this value 
     }
 
-    else if(varType == TokenType::VCharacter){
+    if (type == TokenType::VCharacter){
         Token lit = Advance();          // Gets the literal and moves position
 
         if(lit.Value.length() != 1){
             throw std::runtime_error("Should be length 1");  // As per the production rules
         }
-        value = std::make_unique<CharacterExpr>(lit.Value);
+        return std::make_unique<CharacterExpr>(lit.Value);
     }
 
-    else if(varType == TokenType::VDigit){
+    if (type == TokenType::VDigit){
         Token lit = Advance();          // Gets the literal and moves position
         
         if(lit.Type != TokenType::Number || lit.Value.length() != 1)        // Digit must be a number of length 1 as per the production rules
         {
             throw std::runtime_error("Should be length 1 and a number gangalang");
         }
-        value = std::make_unique<DigitExpr>(lit.Value);
-
+        return std::make_unique<DigitExpr>(lit.Value);
     }
 
-    else if(varType == TokenType::Vnum){
-        value = ParseExpression();      // Vnum can be a whole expression or just a value which is covered in parse expression
+    if(type == TokenType::Vnum){
+        return ParseExpression();      // Vnum can be a whole expression or just a value which is covered in parse expression
+    } 
+
+    throw std::runtime_error("Thats not a type lil bro lock in");   // Throws an error if its not a valid type
+    
+}
+
+// Follows grammer rule     <VariableDeclaration> ->	<VariableType> Identifier = <Expression>
+std::unique_ptr<VarDecExpr> Parser::ParseVarDec(bool isAttribute, TokenType access){
+    TokenType varType = Advance().Type;    // Saves the type and name of declared variable             
+    
+    // Enforcing class attribute declaration syntax
+    if (isAttribute){
+        if (Advance().Value != "selfish")
+            throw std::runtime_error("Attributes must be declared on selfish.");
+        
+        if (Advance().Type != TokenType::Arrow)
+            throw std::runtime_error("Attributes must be use arrow");
+    }
+
+    // Get the assigned value and Move pass '=' 
+    std::string varName = Advance().Value;
+    Advance();
+
+    // The function above
+    std::unique_ptr<Expr> varValue = ParseGetValue(varType); 
+
+    // Create expression and make new entry to symbol table
+    std::unique_ptr<VarDecExpr> newVarDecExpr = std::make_unique<VarDecExpr>(varType, varName, std::move(varValue), access, isAttribute);
+    std::unique_ptr<SymbolEntry> newEntry = std::make_unique<SymbolEntry>(
+        varName,
+        varType,
+        SymbolKind::Variable,
+        newVarDecExpr.get()
+    );
+
+    // Deciding whether to add to the current scope syntax table or the accesstor class
+    if (isAttribute){
+        if (ClassDecExpr* classExpr =  currentScope->GetParentClass())
+            classExpr->Insert(varName, std::move(newEntry));
+        else 
+            throw std::runtime_error("Cant find parent class to declare: " + varName);
     } else {
-        throw std::runtime_error("Thats not a type lil bro lock in");   // Throws an error if its not a valid type
+        currentScope->Insert(varName, std::move(newEntry));
     }
 
-    return std::make_unique<VarDecExpr>(varType, name, std::move(value));       // returns the expression created
+    return newVarDecExpr;       // returns the expression created
 }
 
  // List -> '"' Identifier '|' <ElementList> '"'
  //<ElementList>	-> 	<Element> || <Element> ‘|’ <ElementList>
-std::unique_ptr<Expr> Parser::ParseList(){
+std::unique_ptr<ListExpr> Parser::ParseList(){
     Advance();      // Move past the first " 
 
     Token nameToken = Advance();    // Get the list name and move on
@@ -372,7 +424,6 @@ std::unique_ptr<Expr> Parser::ParseList(){
     {
         Advance();   // move past '|'
         elements.push_back(ParseExpression());   // next element
-        std::cout << Peek().Value <<  Peek(2).Value<< std::endl;
         if (Current().Type == TokenType::Quote && Peek().Type == TokenType::AnotherOne)
         {
             elements.push_back(ParseList());
@@ -383,12 +434,25 @@ std::unique_ptr<Expr> Parser::ParseList(){
 
     Advance();   // move past "
 
-    return std::make_unique<ListExpr>(name, std::move(elements));   // Make a list expression using the name and element vector
-    }
+
+    std::unique_ptr<ListExpr> newListDecExpr = std::make_unique<ListExpr>(name, std::move(elements));
+
+    std::unique_ptr<SymbolEntry> newEntry = std::make_unique<SymbolEntry>
+    (
+        name,
+        TokenType::List,
+        SymbolKind::Variable,
+        newListDecExpr.get()
+    );
+    currentScope->Insert(name, std::move(newEntry));
+
+    return newListDecExpr;       // returns the expression created
+
+}
 
 // Follows grammer rule   <ParameterList> -> <Parameter> | <Parameter> '|' <ParameterList> | NOTHING
-std::vector<std::pair<TokenType, std::string>> Parser::ParseParams(){
-    std::vector<std::pair<TokenType, std::string>> params;
+std::vector<std::unique_ptr<ParameterExpr>> Parser::ParseParams(){
+    std::vector<std::unique_ptr<ParameterExpr>> params;
 
     while (Current().Type != TokenType::Colon)   // Read parameters until the scope opens
     {
@@ -399,7 +463,19 @@ std::vector<std::pair<TokenType, std::string>> Parser::ParseParams(){
 
         TokenType paramType = Advance().Type;       // parameter type
         std::string paramName = Advance().Value;    // parameter name
-        params.push_back({paramType, paramName});
+
+        std::unique_ptr<ParameterExpr> newParaExpr = std::make_unique<ParameterExpr>(paramName, paramType);
+
+        std::unique_ptr<SymbolEntry> newEntry =  std::make_unique<SymbolEntry>
+        (
+            paramName,
+            paramType,
+            SymbolKind::Parameter,
+            newParaExpr.get()
+        );
+        currentScope->Insert(paramName, std::move(newEntry));
+
+        params.push_back(std::move(newParaExpr));
 
         if (Current().Type == TokenType::Separator)   // '|' between parameters
         {
@@ -411,9 +487,6 @@ std::vector<std::pair<TokenType, std::string>> Parser::ParseParams(){
 }
 
 // Reads a whole scope from ':' <StatementList> ';'
-
-// Reads a whole scope from ':' <StatementList> ';'
-
 std::vector<std::unique_ptr<Expr>> Parser::ParseBlock(){
 
     if (Advance().Type != TokenType::Colon)   // check if the scope begins with ':'
@@ -429,11 +502,6 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseBlock(){
         }
 
         body.push_back(ParseStatement());
-
-        if (Current().Type == TokenType::Comma)   // ',' between statements
-        {
-            Advance();
-        }
     }
 
     Advance();      // Move past the ';'
@@ -441,13 +509,13 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseBlock(){
     return body;
 }
 
-std::unique_ptr<Expr> Parser::ParseIteration(){
+std::unique_ptr<IterationExpr> Parser::ParseIteration(){
     Advance(); // Move past 'forwhencake'
     std::vector<std::unique_ptr<Expr>> body = ParseBlock();
     return std::make_unique<IterationExpr>(std::move(body));
 }
 
-std::unique_ptr<Expr> Parser::ParseBreak(){
+std::unique_ptr<HandbrakeExpr> Parser::ParseBreak(){
     Advance();      // Move past handbreak
     return std::make_unique<HandbrakeExpr>();
 }
@@ -473,7 +541,7 @@ std::unique_ptr<ConditionalStatementExpr> Parser::ParseConditionalStatement(){
     return std::make_unique<ConditionalStatementExpr>(type, std::move(condition), std::move(body));
 }
 
-std::unique_ptr<Expr> Parser::ParseConditionalStatementStructure() {
+std::unique_ptr<ConditionalStatementStructExpr> Parser::ParseConditionalStatementStructure() {
     std::vector<std::unique_ptr<ConditionalStatementExpr>> aConditionStatement;
 
     if (Current().Type == TokenType::IguessIf)
@@ -489,30 +557,41 @@ std::unique_ptr<Expr> Parser::ParseConditionalStatementStructure() {
 }
 
 // Follows grammer rule   <FunctionDeclaration> -> FUNCTION Identifier <ParameterList>: <StatementList>;
+std::unique_ptr<FunctionDecExpr> Parser::ParseFunctionDec(){
+    Advance();                          // Move past FUNCTION
+    std::string name = Advance().Value; // Get the function name
+    
+    std::unique_ptr<FunctionDecExpr> newFuncDecExpr = std::make_unique<FunctionDecExpr>(name, currentScope);
 
-std::unique_ptr<Expr> Parser::ParseFunctionDec(){
-    Advance(); // Move past FUNCTION
+    // Change the current scope so that stuff in the block is added to the correct syntax table
+    currentScope = newFuncDecExpr.get();
 
-    Token nameToken = Advance(); // Get the function name
-    std::string name = nameToken.Value;
-
-    std::vector<std::pair<TokenType, std::string>> params = ParseParams();
-
-    functionArity[name] = (int)params.size(); // Save the parameter count before the body, so a function can call itself
-
+    // Parsing parameters and the statements inside the function 
+    std::vector<std::unique_ptr<ParameterExpr>> params = ParseParams();
     std::vector<std::unique_ptr<Expr>> body = ParseBlock();
 
-    return std::make_unique<FunctionDecExpr>(name, std::move(params), std::move(body));
+    std::unique_ptr<SymbolEntry> newEntry =  std::make_unique<SymbolEntry>
+        (name, TokenType::Function, SymbolKind::Function, newFuncDecExpr.get());
+
+    // Go back to previous scope after done parsing body and add function to syntax table
+    currentScope = currentScope->ParentScope;
+    currentScope->Insert(name, std::move(newEntry));
+
+    // Update function expression attribute
+    newFuncDecExpr->Body = std::move(body);
+    newFuncDecExpr->Param = std::move(params);
+
+    return std::move(newFuncDecExpr);
 }
 
 // Follows grammer rule   <ReturnStatement> -> leave <Expression>
-std::unique_ptr<Expr> Parser::ParseReturn(){
+std::unique_ptr<ReturnExpr> Parser::ParseReturn(){
     Advance();      // Move past leave
     return std::make_unique<ReturnExpr>(ParseExpression());
 }
 
 // Reads exactly as many arguments as were declared, with a '|' between each.
-std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(int expected, std::string what){
+std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(int expected, std::string name){
     std::vector<std::unique_ptr<Expr>> args;
 
     for (int i = 0; i < expected; i++)
@@ -521,7 +600,7 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(int expected, std::string w
         {
             if (Current().Type != TokenType::Separator)
             {
-                throw std::runtime_error(what + " did not get enough arguments");
+                throw std::runtime_error(name + " did not get enough arguments");
             }
 
             Advance(); // Move past the '|'
@@ -534,161 +613,160 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(int expected, std::string w
 }
 
 // Follows grammer rule   <FunctionCall> -> f <FunctionName> <ArgumentList>
-std::unique_ptr<Expr> Parser::ParseFunctionCall(){
-    Advance();      // Move past the 'f'
+std::unique_ptr<FunctionCallExpr> Parser::ParseFunctionCall(ClassDecExpr* classExpr, std::unique_ptr<Expr> callee){
+    
+    // Move past the 'f' and Get the function name
+    Advance();      
+    std::string funcName = Advance().Value; 
 
-    Token nameToken = Advance();        // Get the function name
-    std::string name = nameToken.Value;
+    // Check if this function call is inside a class and  that function is also this class method
+    ClassDecExpr* classDecExpr = currentScope->GetParentClass();
+    if (
+        classDecExpr && 
+        classExpr == nullptr && callee == nullptr &&
+        !classDecExpr->ParentScope->Contain(funcName) &&
+        classDecExpr->ContainLocal(funcName)
+    ) {
+        throw std::runtime_error("Wrong way to call method " + funcName);
+    }
+    
+    ScopeExpr* activeScope =  currentScope;
+    SymbolEntry* funcSymbol;
 
-    if (functionArity.count(name) == 0)     // The function was never declared
-    {
-        throw std::runtime_error("Cannot Recognize " + name);
+    // Needed to see if this function is a method is being called inside a class or not
+    if (classExpr) {
+        activeScope = classExpr;
+        funcSymbol = activeScope->LookUpLocal(funcName);
+    } else {
+        funcSymbol = activeScope->LookUp(funcName);
     }
 
-    int expected = functionArity[name];     // How many arguments this function takes
+    if (funcSymbol->SymK != SymbolKind::Function) 
+    {
+        throw std::runtime_error("Cannot find function/method " + funcName);
+    }
 
-    std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, "Function " + name);
+    FunctionDecExpr* funcDecExpr = dynamic_cast<FunctionDecExpr*>(funcSymbol->Expression);
 
-    return std::make_unique<FunctionCallExpr>(name, std::move(args));
+    std::vector<ParameterExpr*> expected = activeScope->GetFunctionPara(funcName);
+
+    std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected.size(), "Method " + funcName);
+
+    return std::make_unique<FunctionCallExpr>(funcDecExpr, std::move(args), std::move(callee));
+}
+
+// Basically the same as normal attribute, just change the IsAttrute and access field.
+std::unique_ptr<VarDecExpr> Parser::ParseAttributeDec(){ // Parses 'public Vnum self.x = ...'
+    TokenType access = Advance().Type; // public, private or protected
+    std::unique_ptr<VarDecExpr> newAttExpr = ParseVarDec(true, access);
+    return std::move(newAttExpr);       // returns the expression created
 }
 
 // Follows grammer rule   <Methods> -> <FunctionDeclaration> | <FunctionDeclaration> <Methods>
-std::unique_ptr<Expr> Parser::ParseMethod(TokenType access, std::string className){
-    if (Current().Type != TokenType::Function)
-    {
-        throw std::runtime_error("Only FUNCTION declarations are allowed inside an access section");
-    }
-
-    Advance(); // Move past FUNCTION
-
-    Token nameToken = Advance(); // Get the method name
-    std::string name = nameToken.Value;
-
-    std::vector<std::pair<TokenType, std::string>> params = ParseParams();
-
-    methodArity[className + "." + name] = (int)params.size(); // Keyed by class so two classes can share a method name
-
-    std::vector<std::unique_ptr<Expr>> body = ParseBlock();
-
-    return std::make_unique<FunctionDecExpr>(name, std::move(params), std::move(body), true, access);
+// Basically the same as normal function, just change the IsMethod and access field.
+std::unique_ptr<FunctionDecExpr> Parser::ParseMethod(TokenType access = TokenType::Public) // Parses one FUNCTION inside an access section
+{
+    std::unique_ptr<FunctionDecExpr> classMethodExpr = ParseFunctionDec();
+    classMethodExpr->Access = access;
+    classMethodExpr->IsMethod = true;
+    return std::move(classMethodExpr);
 }
 
-// Follows grammer rule   <ClassDeclaration> -> <ClassName> : <ClassMembers> ;
-std::unique_ptr<Expr> Parser::ParseClassDec(){
-    Token nameToken = Advance();        // Get the class name
-    std::string name = nameToken.Value;
 
-    if (name.length() < 2 || name[0] != 'C')
-    {
-        throw std::runtime_error("Class names must start with C: " + name);
-    }
+std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(){ // Parses class declarations
 
+    std::string className = Advance().Value;    // Get the class name
     Advance(); // Move past the ':'
 
-    std::unique_ptr<Expr> constructor;
+    std::unique_ptr<ClassDecExpr> newClassDecExpr = std::make_unique<ClassDecExpr>(className, currentScope);
 
-    classArity[name] = 0; // A class with no constructor takes no arguments
+    currentScope = newClassDecExpr.get();   // Change scope into the class to parse its body
 
-    if (Current().Type == TokenType::Function && Peek().Type == TokenType::Self) // FUNCTION SELF is the constructor
-    {
-        Advance(); // Move past FUNCTION
-        Advance(); // Move past SELF
-        std::vector<std::pair<TokenType, std::string>> params = ParseParams();
-        classArity[name] = (int)params.size(); // Remember how many arguments this class is built with
-        std::vector<std::unique_ptr<Expr>> body = ParseBlock();
-        constructor = std::make_unique<FunctionDecExpr>("__init__", std::move(params), std::move(body), true);
-    }
-
-    std::vector<std::unique_ptr<Expr>> methods;      // Every method from every access section
-
-    while (Current().Type != TokenType::Semicolon)   // Read access sections until the class closes
-    {
-        if (Current().Type == TokenType::EndOfFile)
+    // Looping through the class body
+    while (Current().Type != TokenType::Semicolon) {  // Read access sections until the class closes
+        TokenType currentType = Current().Type;
+        if (currentType == TokenType::EndOfFile) 
         {
-            throw std::runtime_error("Non closed scope: class " + name + " is missing ';'");
+            throw std::runtime_error("Non closed scope: class " + className + " is missing ';'");
         }
 
-        if (Current().Type != TokenType::Public && Current().Type != TokenType::Private && Current().Type != TokenType::Protected)
+        // Parsing the constructor.
+        if (currentType == TokenType::Function && Peek().Type == TokenType::SELF)
         {
-            throw std::runtime_error("Methods must be inside a public, private or protected section");
+            newClassDecExpr->Body.push_back(std::move(ParseMethod()));
+            continue;
         }
 
-        TokenType access = Advance().Type; // public, private or protected
-
-        if (Current().Type != TokenType::Colon)
-        {
-            throw std::runtime_error("An access section must be followed by ':'");
-        }
-
-        Advance(); // Move past the section's ':'
-
-        while (Current().Type != TokenType::Semicolon) // Read methods until the section closes
-        {
-            if (Current().Type == TokenType::EndOfFile)
-            {
-                throw std::runtime_error("Non closed scope: an access section in " + name + " is missing ';'");
+        // Parsing each of the scope for access modifier
+        if (
+            (currentType == TokenType::Public || 
+            currentType == TokenType::Private ||
+            currentType == TokenType::Protected) &&
+            Peek().Type == TokenType::Colon
+        ) {
+            Advance();  // Go pass Public/Private/Protected
+            Advance();  // Go pass ':'
+            while (Current().Type != TokenType::Semicolon) { // Read methods until the section closes
+                
+                if (Current().Type == TokenType::EndOfFile) {
+                    throw std::runtime_error("Non closed scope: an access section in " + className + " is missing ';'");
+                }
+                newClassDecExpr->Body.push_back(std::move(ParseMethod(currentType)));
             }
-
-            methods.push_back(ParseMethod(access, name));
+            Advance(); // Move past the section's ';'
+            continue;
         }
-
-        Advance(); // Move past the section's ';'
     }
-
     Advance(); // Move past the class's ';'
 
-    return std::make_unique<ClassDecExpr>(name, std::move(constructor), std::move(methods));
+    // Add the new class to the symbol table
+    std::unique_ptr<SymbolEntry> newEntry =  std::make_unique<SymbolEntry>
+        (className, TokenType::Custom, SymbolKind::Class, newClassDecExpr.get());
+
+    currentScope = currentScope->ParentScope;
+
+    currentScope->Insert(className, std::move(newEntry));
+
+    return std::move(newClassDecExpr);
 }
 
-// Follows grammer rule   <ConstructorStatement> -> <AccessModifier> <VariableType> self.Identifier = <Expression>
 
-std::unique_ptr<Expr> Parser::ParseAttributeDec(){
-    TokenType access = Advance().Type; // public, private or protected
-    TokenType varType = Advance().Type; // variable types
+std::unique_ptr<ObjectDecExpr> Parser::ParseObjectDec()// Parses 'CName obj = CName args'
+{
+    std::string className = Advance().Value; // The class name on the left
+    std::string objName = Advance().Value; // obejct name
 
-    Token selfToken = Advance();
-    if (selfToken.Value != "self")
+    // Class was not declared
+    SymbolEntry* classSymbol = currentScope->LookUp(className);
+    if (classSymbol->SymK != SymbolKind::Class) 
     {
-        throw std::runtime_error("Attributes must be declared on self, not " + selfToken.Value);
+        throw std::runtime_error("Cannot Recognize Class: " + className);
     }
-
-    Advance(); // Move past the '.'
-
-    Token nameToken = Advance(); // The attribute name
-    std::string name = nameToken.Value;
-
-    Advance(); // Move past the '='
-
-    std::unique_ptr<Expr> value = ParseExpression();
-
-    return std::make_unique<AttributeDecExpr>(access, varType, name, std::move(value));
-}
-
-// Follows grammer rule   <ObjectDeclaration> -> <ClassName> Identifier = <ClassName> <ParameterList>
-std::unique_ptr<Expr> Parser::ParseObjectDec(){
-    Token classToken = Advance(); // The class name on the left
-    std::string className = classToken.Value;
-
-    Token nameToken = Advance(); // obejct name
-    std::string name = nameToken.Value;
-
-    if (classArity.count(className) == 0) // Class was not declared
-    {
-        throw std::runtime_error("Cannot Recognize " + className);
-    }
+    ClassDecExpr* classExpr = dynamic_cast<ClassDecExpr*>(classSymbol->Expression);
+    
 
     Advance(); // Move past the '='
 
     Token secondToken = Advance();
     if (secondToken.Value != className)
     {
-        throw std::runtime_error("Object " + name + " was declared as " + className + " but built as " + secondToken.Value);
+        throw std::runtime_error("Object " + objName + " was declared as " + className + " but built as " + secondToken.Value);
     }
 
-    int expected = classArity[className]; // How many arguments the constructor takes
 
-    std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, "Class " + className);
+    // How many arguments the constructor takes
+    std::vector<ParameterExpr*> expected = classExpr->GetFunctionPara(); 
+    std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected.size(), "Class " + className);
 
-    objectClass[name] = className; // Remember the class so '->' can find its methods
-    return std::make_unique<ObjectDecExpr>(className, name, std::move(args));
-}
+    // Get the class expression and create new object expression
+    std::unique_ptr<ObjectDecExpr> newObjDecExpr = 
+        std::make_unique<ObjectDecExpr>(classExpr, objName, std::move(args));
+
+    // Adding to the symbol table
+    std::unique_ptr<SymbolEntry> newEntry = make_unique<SymbolEntry>
+        (objName, TokenType::Custom, SymbolKind::Variable, newObjDecExpr.get());
+
+    currentScope->Insert(objName, move(newEntry));
+
+    return newObjDecExpr;
+}; 

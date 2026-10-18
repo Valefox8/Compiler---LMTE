@@ -1,28 +1,97 @@
+
+
 <!-- Arithmetic -->
+1 mul (2 add 3) div 10
 
 <!-- Variables -->
-Vnum a = 1 mul (2 add 3) div 10
-
+Vnum a = 12
 Vletter b = #b#
-Vwords c = $$
+Vwords c = $abc$
 Vboolean d = cake
 VCharacter e = q
-VDigit g = 9
+VDigit f = 7
 
 <!-- Lists -->
-"NOTanotherone | 0 | 2 add 3 | 10 | 1"anotherone|1""
-Vnum x= NOTanotherone.at[0]
+"randoms | 1 | 2 add 3 | 10"
+randoms.at[0]
+randoms.at[2]
+randoms.size()
+
+Vnum x = 10
+iguessif(x equal 5):
+    a = 12;
+guessnot:
+    a = 6;
+
+
+iguessif(x equal 5):
+    forwhencake:
+        iguessif(x lessThan 5):
+            forwhencake:
+                handbrake
+            ;
+        ;
+        guessthis(x moreThan 5 ro x isTotallyDefinitelyNotEqualTo 10):
+            forwhencake:
+                handbrake
+            ;
+        ;
+        guessnot:
+            iguessif(x isTotallyDefinitelyNotEqualTo 5):
+                iguessif(x equalLessThan 10 dna x equalMoreThan 5):
+                    x = 7
+                ;
+                guessnot:
+                    x = 1
+                ;
+            ;
+            guessnot:
+                forwhencake:
+                    handbrake
+                ;
+            ;
+        ;
+    handbrake
+    ;
+;
+
+
+<!-- Functions -->
+FUNCTION Addition Vnum num1 | Vnum num2:
+    Vnum result = num1 add num2
+    leave result
+;
+Vnum age = f Addition 3 | 5
 
 
 <!-- Classes -->
-CMyVehicle:
-FUNCTION SELF Vnum speed | Vnum value:
-private Vnum self.speed = speed,
-protected Vnum self.value = value,
-self.speed = self.speed add 1;
-private:
-FUNCTION ACCELEATE:
-self.speed = speed1 add speed2,
-leave self.speed;
+CMyVehicleC:
+    public:
+        FUNCTION DECELERATE Vnum speed1 | Vnum speed2:
+            leave 5
+        ;
+    ;
+    FUNCTION SELF Vnum speed | Vnum value:
+        public Vnum selfish -> speed = speed
+        public Vnum selfish -> value = value
+        selfish -> speed = selfish -> speed add 1
+        selfish -> f DECELERATE 3 | 3
+        FUNCTION DECELERATE Vnum speed1 | Vnum speed2:
+            leave 5
+        ;
+    ;
+    public:
+    ;
+
 ;
+
+CMyVehdfdicleC:
 ;
+
+<!-- Reassignment -->
+a = a add 1
+
+<!-- Objects -->
+CMyVehicleC eee = CMyVehicleC 3 | 10
+
+a = eee -> f DECELERATE 3 | 3

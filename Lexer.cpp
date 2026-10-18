@@ -148,7 +148,7 @@ std::vector<Token> Lexer::Tokenize(){
         }
 
         // If its not an expected symbol
-        throw std::runtime_error("Lexical error: unexpected character");
+        throw std::runtime_error("Lexical error: unexpected character: " + current);
     }
 
     //When while loop finishes, implement the end of file token and return
@@ -273,7 +273,8 @@ Token Lexer::ReadIdOrKey()
         if (value == "ro") return Token(TokenType::Ro, value);
 
         // Class keywords
-        if (value == "SELF") return Token(TokenType::Self, value);
+        if (value == "SELF") return Token(TokenType::SELF, value);
+        // if (value == "selfish") return Token(TokenType::selfish, value);
         if (value == "public") return Token(TokenType::Public, value);
         if (value == "private") return Token(TokenType::Private, value);
         if (value == "protected") return Token(TokenType::Protected, value);

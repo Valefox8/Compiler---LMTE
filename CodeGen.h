@@ -59,6 +59,8 @@ class CodeGen
 private:
     std::string Operator(TokenType op);
     std::string Indent(std::string);
+
+    std::string GenCodeClassDec(ClassDecExpr* classDec);
     
     // std::string Iteration(IterationExpr* expr);
     // std::string ConditionalStatementStruct(ConditionalStatementStructExpr* expr);

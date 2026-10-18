@@ -35,8 +35,11 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <iostream>
 #include "TokenType.h"
 #include <utility>
+#include"SymbolEntry.h"
+using namespace std;
 
 // These are for the parser where it defines the tree node shapes
 
@@ -46,6 +49,37 @@ public:
     virtual ~Expr() {}
 };
 
+class ClassDecExpr;
+class MethodDecExpr;
+class ParameterExpr;
+class ObjectDecExpr;
+
+
+// Scope defined to use the syntax table
+class ScopeExpr : public Expr {
+    public: 
+        std::vector<std::unique_ptr<Expr>> Body; // The statements inside the scope
+        std::map<std::string, std::unique_ptr<SymbolEntry>> Table;
+        ScopeExpr* ParentScope;
+        std::string Name;
+
+        ScopeExpr (ScopeExpr* parentScope = nullptr)
+        :   ParentScope(parentScope)
+        {
+        }
+
+        bool Contain (const std::string& varName);
+        bool ContainLocal (const std::string& varName);
+        SymbolEntry* LookUp(const std::string& varName);
+        SymbolEntry* LookUpLocal(const std::string& varName);
+        void Insert(const std::string& varName, std::unique_ptr<SymbolEntry> entry);
+        bool Update(const std::string& varName, std::unique_ptr<SymbolEntry> entry);
+        ClassDecExpr* GetParentClass();
+        std::string GetNames();
+        void PrintSymbolTable() const;
+        std::vector<ParameterExpr*> GetFunctionPara(std::string funcName = "SELF");
+
+};
 
 // these first ones are for arithmetic
 class NumberExpr : public Expr  // Identifies a number
@@ -63,10 +97,12 @@ class IdentifierExpr : public Expr  // Identifies a variable/identifier
 {
 public:
     std::string Name;
+    std::unique_ptr<Expr> Callee;
 
-    IdentifierExpr(std::string name)
+    IdentifierExpr(std::string name, std::unique_ptr<Expr> callee = nullptr)
     {
         Name = name;
+        Callee = std::move(callee);
     }
 };
 
@@ -84,8 +120,6 @@ public:
         Right = std::move(right);
     }
 };
-
-
 
 // THESE NEXT ONES ARE FOR VARIABLES PRIMARILY
 // same structure as above
@@ -152,12 +186,23 @@ class VarDecExpr : public Expr{
         TokenType VarType;              // Vnum, Vwords, Vboolean, Vletter, etc.
         std::string Name;               // the variable's identifier
         std::unique_ptr<Expr> Value;    // whatever is assigned - a NumberExpr, BinaryExpr, or a literal
+        TokenType Access; // Public, Private or Protected
+        bool IsAttribute;
 
-         VarDecExpr(TokenType varType, std::string name, std::unique_ptr<Expr> value)   // Var dec expression constructor
+        // Var dec expression constructor
+         VarDecExpr(
+            TokenType varType, 
+            std::string name, 
+            std::unique_ptr<Expr> value,
+            TokenType access = TokenType::Public,
+            bool isAttribute = false
+        )   
         {
             VarType = varType;
             Name = name;
             Value = std::move(value);
+            Access = access;
+            IsAttribute = isAttribute;
         }
 
 };
@@ -197,7 +242,6 @@ class ListSizeExpr : public Expr{
     }
 };
 
-// DONE!!!!
 class IterationExpr : public Expr {
     public: 
         std::vector<std::unique_ptr<Expr>> Body;
@@ -208,19 +252,8 @@ class IterationExpr : public Expr {
         }
 };
 
-
-// PROBABLY SHOULD BE CAREFUL
 class HandbrakeExpr : public Expr{};
-// class HandbrakeExpr : public Expr {
-// public:
-//     std::unique_ptr<Expr> Expression;
 
-//     HandbrakeExpr(std::unique_ptr<Expr> expression) {
-//         Expression = std::move(expression);
-//     }
-// };
-
-// DONE!!!!!!
 class ConditionalStatementExpr : public Expr{
     public:
         TokenType Type;
@@ -235,7 +268,6 @@ class ConditionalStatementExpr : public Expr{
 };
 
 
-// TO DO: FIX THE PARSE STATEMENT THING 
 class ConditionalStatementStructExpr : public Expr{
     public: 
         std::vector<std::unique_ptr<ConditionalStatementExpr>> ConditionalStatements;
@@ -246,34 +278,53 @@ class ConditionalStatementStructExpr : public Expr{
         }
 };
 
-class FunctionDecExpr : public Expr{
+// A single parameter of a function or method
+class ParameterExpr : public Expr {
+    public: 
+        std::string Name;
+        TokenType Type;
+
+        ParameterExpr (std::string name, TokenType type)
+            : Name(name), Type(type)
+            {}
+};
+
+// Is used for both normal function an method
+class FunctionDecExpr : public ScopeExpr {
     public:
-        std::string Name;                                        // Function name
-        std::vector<std::pair<TokenType, std::string>> Params;   // Parameters type and name
-        std::vector<std::unique_ptr<Expr>> Body;                 // The statements inside the scope
-        bool IsMethod;      
-        TokenType Access; // For accessing in methods, public, private or protected                                     // Whether the function is a method
+        TokenType Access;
+        bool IsMethod;
+
+        std::string Name; // Function name
+        std::vector<std::unique_ptr<ParameterExpr>> Param;   // Parameters type and name
         
-        FunctionDecExpr(std::string name, std::vector<std::pair<TokenType, std::string>> params, std::vector<std::unique_ptr<Expr>> body, bool isMethod = false, TokenType access = TokenType::Public)
+        FunctionDecExpr
+        ( 
+            std::string name,
+            ScopeExpr* parentScopeTable = nullptr,
+            bool isMethod = false,
+            TokenType access = TokenType::Public
+        )   :   ScopeExpr(parentScopeTable),
+                Name(name),
+                Access(access),
+                IsMethod(isMethod)
         {
-            Name = name;
-            Params = std::move(params);
-            Body = std::move(body);
-            IsMethod = isMethod;
-            Access = access;
         }
 
 };
 
+// 
 class FunctionCallExpr : public Expr{
     public:
-        std::string Name;                            // The function being called
-        std::vector<std::unique_ptr<Expr>> Args;     // The arguments passed to it
+        FunctionDecExpr* FuncDecExpr;                   // The function  being called
+        std::vector<std::unique_ptr<Expr>> Args;        // The arguments passed to it
+        std::unique_ptr<Expr> Callee;                   // What object called the function, could be nothing or 'selfish' or an 'object' 
 
-        FunctionCallExpr(std::string name, std::vector<std::unique_ptr<Expr>> args)
+        FunctionCallExpr(FunctionDecExpr* funcDecExpr, std::vector<std::unique_ptr<Expr>> args, std::unique_ptr<Expr> callee = nullptr)
         {
-            Name = name;
+            FuncDecExpr = funcDecExpr;
             Args = std::move(args);
+            Callee = std::move(callee);
         }
 };
 
@@ -288,48 +339,33 @@ class ReturnExpr : public Expr{     // Leave keyword
 };
 
 // For implementing classes
-class AttributeDecExpr : public Expr{ // public Vnum self.speed = speed
-    public:
-        TokenType Access; // Public, Private or Protected
-        TokenType VarType; // Vnum, Vwords, other variable types
-        std::string Name; // The attribute name, without the self keyword
-        std::unique_ptr<Expr> Value;
-
-        AttributeDecExpr(TokenType access, TokenType varType, std::string name, std::unique_ptr<Expr> value)
-        {
-            Access = access;
-            VarType = varType;
-            Name = name;
-            Value = std::move(value);
-        }
-};
-
-class ClassDecExpr : public Expr{
+// Used to store class declaration expression, and is a scope with its own syntax table
+class ClassDecExpr : public ScopeExpr {
     public:
         std::string Name; // Class name
-        std::unique_ptr<Expr> Constructor; // A constructor or empty if the class doesn't have one
-        std::vector<std::unique_ptr<Expr>> Methods;   // Every method in the class
 
-        ClassDecExpr(std::string name, std::unique_ptr<Expr> constructor, std::vector<std::unique_ptr<Expr>> methods)
+        ClassDecExpr
+        (
+            std::string name, 
+            ScopeExpr* parentScope = nullptr
+        )   :   ScopeExpr(parentScope),
+                Name(name)
         {
-            Name = name;
-            Constructor = std::move(constructor);
-            Methods = std::move(methods);
+            std::vector<std::unique_ptr<Expr>> dummy;
+            
+            // Make it so that the selfish keyword refers to the class in the declaration
+            std::unique_ptr<SymbolEntry> newEntry = std::make_unique<SymbolEntry>(
+                "selfish",
+                TokenType::Custom,
+                SymbolKind::Variable,
+                this
+            );
+            Insert("selfish", std::move(newEntry));
         }
 };
+
 
 // THESE ARE FOR READING AND WRITING VALUES
-class AttributeExpr : public Expr{ // self.speed
-    public:
-        std::string ObjectName; // The thing before the dot, e.g. 'self'
-        std::string Name; // The attribute after the dot, e.g. 'speed'
-
-        AttributeExpr(std::string objectName, std::string name)
-        {
-            ObjectName = objectName;
-            Name = name;
-        }
-};
 
 class AssignExpr : public Expr{ // a = a add 1
     public:
@@ -342,31 +378,17 @@ class AssignExpr : public Expr{ // a = a add 1
             Value = std::move(value);
         }
 };
+
 class ObjectDecExpr : public Expr{ // CMyVehicle Ford1 = CMyVehicle 100 | 10
     public:
-        std::string ClassName; // The class being created
+        ClassDecExpr* ClassDefExpr; // The class being created
         std::string Name; // Object name
-        std::vector<std::unique_ptr<Expr>> Args; // constructor arguments
+        std::vector<std::unique_ptr<Expr>> Args;
 
-        ObjectDecExpr(std::string className, std::string name, std::vector<std::unique_ptr<Expr>> args)
+        ObjectDecExpr(ClassDecExpr* classDefExpr, std::string name, std::vector<std::unique_ptr<Expr>> args)
+            :   ClassDefExpr(classDefExpr), Name(name), Args(std::move(args))
         {
-            ClassName = className;
-            Name = name;
-            Args = std::move(args);
         }
 };
 
-class MethodCallExpr : public Expr{ // Ford1 -> f ACCELERATE 10 | 20
-    public:
-        std::string ObjectName; // The object being called on
-        std::string MethodName; // The method being called
-        std::vector<std::unique_ptr<Expr>> Args; // The arguments passed to it
-
-        MethodCallExpr(std::string objectName, std::string methodName, std::vector<std::unique_ptr<Expr>> args)
-        {
-            ObjectName = objectName;
-            MethodName = methodName;
-            Args = std::move(args);
-        }
-};
 #endif

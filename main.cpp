@@ -43,20 +43,11 @@ int main()
     // Tokenizes
     std::vector<Token> tokens = lexer.Tokenize();
 
-    for (Token a_token : tokens)
-    {
-    std::cout << "Current token: "
-            << static_cast<int>(a_token.Type)
-            << " Value: "
-            << a_token.Value
-            << std::endl;
-    }
-
     // Starts parser using the tokens generated previously
     Parser parser(tokens);
 
     // generates the trees for each line of the program
-    std::vector<std::unique_ptr<Expr>> trees = parser.ParseProgram();
+    std::vector<std::unique_ptr<Expr>> trees = std::move(parser.ParseProgram()->Body);
 
     // Creates an instance of code generator
     CodeGen generator;

@@ -35,6 +35,7 @@ enum class TokenType
     VCharacter,
     VDigit,
 
+
     // Literal types
     Real,
     Cake,
@@ -84,11 +85,16 @@ enum class TokenType
     Call,    // "f" keyword to begin a function call
 
     // Classes
-    Self,  // "SELF" keyword
+    SELF,  // "SELF" keyword for constructor function
+    selfish,  // "self" keyword to refer back to the class
     Public,  // "public" access modifier
     Private,  // "private" access modifier
     Protected,  // "protected" access modifier
     Arrow, // "->" for calling methods and reading attributes on an object
+
+    // USE LATER 
+    Custom,
+    List,
 };
 
 #endif
