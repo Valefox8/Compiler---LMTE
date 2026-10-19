@@ -77,6 +77,18 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
         return std::make_unique<NumberExpr>(token.Value);   // Return parsed value
     }
 
+        if (token.Type == TokenType::Word)
+    {
+        Advance();
+        return std::make_unique<WordExpr>(token.Value);
+    }
+
+    if (token.Type == TokenType::Letter)
+    {
+        Advance();
+        return std::make_unique<LetterExpr>(token.Value);
+    }
+
     if (token.Type == TokenType::Cake){
         Advance();
         return std::make_unique<BooleanExpr>(false);
@@ -430,6 +442,11 @@ std::unique_ptr<ListExpr> Parser::ParseList(){
         }
         else if (Peek().Type == TokenType::Quote && Peek(2).Type != TokenType::AnotherOne)
             break;
+    }
+
+    if (Current().Type != TokenType::Quote)
+    {
+        throw std::runtime_error("Expected closing \" for list '" + name + "' but found: " + Current().Value);
     }
 
     Advance();   // move past "

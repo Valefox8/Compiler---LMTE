@@ -10,7 +10,7 @@ VCharacter e = q
 VDigit f = 7
 
 <!-- Lists -->
-"randoms | 1 | 2 add 3 | 10"
+"randoms | 1 | 2 add 3 | 10
 randoms.at[0]
 randoms.at[2]
 randoms.size()
