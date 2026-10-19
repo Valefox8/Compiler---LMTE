@@ -14,7 +14,10 @@ class Expr;
 enum class SymbolKind
 {
     Variable,
+    Attribute,
+    Object,
     Function,
+    Method,
     Class,
     Parameter,      // I feel like its very similar to variables, maybe we could delete it
 };

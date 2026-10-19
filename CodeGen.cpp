@@ -80,11 +80,6 @@ std::string CodeGen::GenCode(Expr* expr){
         std::string result;
         
         // See if its 'selfish ->' or an 'object->' calling  
-        if (identifier->Callee)
-        {
-            IdentifierExpr* callee = dynamic_cast<IdentifierExpr*>(identifier->Callee.get());
-            result += callee->Name + ".";
-        }
         result += identifier->Name;
         return result;
     }
@@ -140,11 +135,7 @@ std::string CodeGen::GenCode(Expr* expr){
     {
         std::string result;
 
-        //  
-        if (decl->IsAttribute)
-        {
-            result += "selfish.";
-        }
+        result += GenCode(decl->Name.get());
 
         switch (decl->Access)
         {
@@ -155,11 +146,17 @@ std::string CodeGen::GenCode(Expr* expr){
                 result += "__";
                 break;
         }
-        result += decl->Name + "=";
+        result += "=";
         result += GenCode(decl->Value.get());
 
         return result;  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
+
+    // if (VarDecExpr* decl = dynamic_cast<VarDecExpr*>(expr))
+    // {
+    //     return "success";
+    // }
+
 
     if(dynamic_cast<HandbrakeExpr*>(expr)){
         return "break";
@@ -303,12 +300,6 @@ std::string CodeGen::GenCode(Expr* expr){
     {
         std::string result;
 
-        // Check for 'selfish ->' or 'object ->'
-        if (call->Callee)
-        {
-            IdentifierExpr* callee = dynamic_cast<IdentifierExpr*>(call->Callee.get());
-            result += callee->Name + ".";
-        }
         
         // Generating parameters 
         result += call->FuncDecExpr->Name + "(";
@@ -351,9 +342,14 @@ std::string CodeGen::GenCode(Expr* expr){
     // Reassignment
     if (AssignExpr* assign = dynamic_cast<AssignExpr*>(expr))
     {
-        std::string target = GenCode(dynamic_cast<IdentifierExpr*>(assign->Target.get()));
+        std::string result;
+        result += GenCode(assign->Target.get());
 
-        return target + " = " + GenCode(assign->Value.get());
+        result += "=";
+
+        result += GenCode(assign->Value.get());
+        std::cout<< result << std::endl;
+        return result;
     }
 
     // Generating objects
@@ -373,6 +369,20 @@ std::string CodeGen::GenCode(Expr* expr){
 
         result += ")";
         return result;
+    }
+
+
+    if (AttReferenceExpr* attRef = dynamic_cast<AttReferenceExpr*>(expr))
+    {
+        std::string result;
+
+        result += GenCode(attRef->Primary.get());
+
+        result += ".";
+
+        result += GenCode(attRef->Attribute.get());
+
+        return result;  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
 
 

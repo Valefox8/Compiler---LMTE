@@ -76,6 +76,7 @@ class Parser{
     
     // DRAGAN CODE
     Token Peek(size_t pos); // Returns the next token without moving position
+    Token Previous(size_t pos); // Returns the previous token without moving position
     std::vector<std::unique_ptr<ParameterExpr>> ParseParams();   // Reads a parameter list up to the ':'
     std::vector<std::unique_ptr<Expr>> ParseBlock();               // Reads a whole ': statements ;' scope
     std::unique_ptr<FunctionDecExpr> ParseMethod(TokenType access); // Parses one FUNCTION inside an access section
@@ -98,11 +99,12 @@ class Parser{
     std::unique_ptr<Expr> ParseExpression();    // Implements the expressions and returns the expression tree
     std::unique_ptr<ScopeExpr> ParseProgram();   // parses for expressions within a program
     std::unique_ptr<Expr> ParseStatement();              // Decides whether its an expression or a variable dec for parsing
-    std::unique_ptr<VarDecExpr> ParseVarDec(bool isAttribute = false, TokenType access = TokenType::Public);     // Self explainitory by the name
+    std::unique_ptr<VarDecExpr> ParseVarDec(SymbolKind symK, TokenType access = TokenType::Public);     // Self explainitory by the name
     std::unique_ptr<ListExpr> ParseList();         // also self explanitory by the name 
-    std::unique_ptr<FunctionDecExpr> ParseFunctionDec();   // Parses a FUNCTION declaration
+    std::unique_ptr<FunctionDecExpr> ParseFunctionDec(SymbolKind symK);   // Parses a FUNCTION declaration
     std::unique_ptr<ReturnExpr> ParseReturn();        // Parses a 'leave' statement
-    std::unique_ptr<FunctionCallExpr> ParseFunctionCall(ClassDecExpr* classExpr = nullptr, std::unique_ptr<Expr> callee = nullptr);   // Parses an 'f' function call
+    std::unique_ptr<FunctionCallExpr> ParseFunctionCall(ClassDecExpr* primaryClassDecExpr = nullptr);   // Parses an 'f' function call
+    std::unique_ptr<AttReferenceExpr> ParseAttributeReference(bool declaration);
     std::unique_ptr<VarDecExpr> ParseAttributeDec(); // Parses 'public Vnum self.x = ...'
     std::unique_ptr<ClassDecExpr> ParseClassDec(); // Parses class declarations
     std::unique_ptr<ObjectDecExpr> ParseObjectDec(); // Parses 'CName obj = CName args'

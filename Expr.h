@@ -63,8 +63,9 @@ class ScopeExpr : public Expr {
         ScopeExpr* ParentScope;
         std::string Name;
 
-        ScopeExpr (ScopeExpr* parentScope = nullptr)
-        :   ParentScope(parentScope)
+        ScopeExpr (std::string name = "", ScopeExpr* parentScope = nullptr)
+        :   ParentScope(parentScope),
+            Name(name)
         {
         }
 
@@ -184,7 +185,7 @@ class VarDecExpr : public Expr{
     public:
         // The 3 parts of variable dec (type, name and value)
         TokenType VarType;              // Vnum, Vwords, Vboolean, Vletter, etc.
-        std::string Name;               // the variable's identifier
+        std::unique_ptr<Expr> Name;               // the variable's identifier
         std::unique_ptr<Expr> Value;    // whatever is assigned - a NumberExpr, BinaryExpr, or a literal
         TokenType Access; // Public, Private or Protected
         bool IsAttribute;
@@ -192,14 +193,14 @@ class VarDecExpr : public Expr{
         // Var dec expression constructor
          VarDecExpr(
             TokenType varType, 
-            std::string name, 
+            std::unique_ptr<Expr> name, 
             std::unique_ptr<Expr> value,
             TokenType access = TokenType::Public,
             bool isAttribute = false
         )   
         {
             VarType = varType;
-            Name = name;
+            Name = std::move(name);
             Value = std::move(value);
             Access = access;
             IsAttribute = isAttribute;
@@ -295,17 +296,15 @@ class FunctionDecExpr : public ScopeExpr {
         TokenType Access;
         bool IsMethod;
 
-        std::string Name; // Function name
         std::vector<std::unique_ptr<ParameterExpr>> Param;   // Parameters type and name
         
         FunctionDecExpr
         ( 
-            std::string name,
+            std::string name = "",
             ScopeExpr* parentScopeTable = nullptr,
             bool isMethod = false,
             TokenType access = TokenType::Public
-        )   :   ScopeExpr(parentScopeTable),
-                Name(name),
+        )   :   ScopeExpr(name, parentScopeTable),
                 Access(access),
                 IsMethod(isMethod)
         {
@@ -318,13 +317,11 @@ class FunctionCallExpr : public Expr{
     public:
         FunctionDecExpr* FuncDecExpr;                   // The function  being called
         std::vector<std::unique_ptr<Expr>> Args;        // The arguments passed to it
-        std::unique_ptr<Expr> Callee;                   // What object called the function, could be nothing or 'selfish' or an 'object' 
 
         FunctionCallExpr(FunctionDecExpr* funcDecExpr, std::vector<std::unique_ptr<Expr>> args, std::unique_ptr<Expr> callee = nullptr)
         {
             FuncDecExpr = funcDecExpr;
             Args = std::move(args);
-            Callee = std::move(callee);
         }
 };
 
@@ -342,14 +339,12 @@ class ReturnExpr : public Expr{     // Leave keyword
 // Used to store class declaration expression, and is a scope with its own syntax table
 class ClassDecExpr : public ScopeExpr {
     public:
-        std::string Name; // Class name
 
         ClassDecExpr
         (
-            std::string name, 
+            std::string name = "", 
             ScopeExpr* parentScope = nullptr
-        )   :   ScopeExpr(parentScope),
-                Name(name)
+        )   :   ScopeExpr(name, parentScope)
         {
             std::vector<std::unique_ptr<Expr>> dummy;
             
@@ -357,7 +352,7 @@ class ClassDecExpr : public ScopeExpr {
             std::unique_ptr<SymbolEntry> newEntry = std::make_unique<SymbolEntry>(
                 "selfish",
                 TokenType::Custom,
-                SymbolKind::Variable,
+                SymbolKind::Object,
                 this
             );
             Insert("selfish", std::move(newEntry));
@@ -366,6 +361,20 @@ class ClassDecExpr : public ScopeExpr {
 
 
 // THESE ARE FOR READING AND WRITING VALUES
+class AttReferenceExpr : public Expr {
+    public:
+        std::unique_ptr<IdentifierExpr> Primary;        // An IdentifierExpr or an AttributeExpr
+        std::unique_ptr<Expr> Attribute;                // Whatever it is being set to
+        TokenType Access;                               // Public, Private or Protected
+
+        AttReferenceExpr(std::unique_ptr<IdentifierExpr> primary, std::unique_ptr<Expr> attribute, TokenType access = TokenType::Public)
+        {
+            Primary = std::move(primary);
+            Attribute = std::move(attribute);
+            Access = access;
+        }
+};
+
 
 class AssignExpr : public Expr{ // a = a add 1
     public:

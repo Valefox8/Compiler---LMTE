@@ -48,7 +48,7 @@ SymbolEntry* ScopeExpr::LookUpLocal(const std::string& varName)
     {
         return Table[varName].get();
     }
-    throw std::runtime_error("Cant find in local scope: " + varName);      
+    throw std::runtime_error("Cant find in local scope: " + this->Name + " value: "+ varName);      
 }
 
 // Insert into current symbol table, will ignore if variable is declared in higher up scopes
@@ -65,6 +65,7 @@ void ScopeExpr::Insert(const std::string& varName, std::unique_ptr<SymbolEntry> 
         throw std::runtime_error("This entry expression is null: " + varName);
     }
 
+    std::cout << "Insert " + varName + " into " + this->Name << std::endl;
     Table[varName] = std::move(entry);
 }
 
@@ -118,7 +119,7 @@ std::vector<ParameterExpr*> ScopeExpr::GetFunctionPara(std::string funcName)
     
     // Check if the scope contains the function
     SymbolEntry* symbol = LookUp(funcName);
-    if (symbol->SymK != SymbolKind::Function)
+    if (symbol->SymK != SymbolKind::Method && symbol->SymK != SymbolKind::Function)
     {
         throw std::runtime_error("Cant function and return parameter: " + funcName);
     }
