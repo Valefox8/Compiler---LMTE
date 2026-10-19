@@ -3,6 +3,7 @@
 Parser::Parser(std::vector<Token> tokens){
     this->tokens = tokens;    // Initialise tokens
     this->position = 0;       // Initialise position
+    this->inWhile = false;
 }
 
 Token Parser::Current(){
@@ -256,13 +257,18 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
     }
 
     if (current == TokenType::Forwhencake)
-    {
+    {   
         return ParseIteration();
     }
 
     if (current == TokenType::Handbrake)      // break statement
-    {
-        return ParseBreak();
+    {   
+        if(inWhile == true){
+            return ParseBreak();
+        }
+        else{
+            throw std::runtime_error("Invalid Syntax: Handbrake");
+        }
     }
 
     // Pretty big change !!!!!!!!!!!!!!
@@ -528,7 +534,17 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseBlock(){
 
 std::unique_ptr<IterationExpr> Parser::ParseIteration(){
     Advance(); // Move past 'forwhencake'
+    bool childWhile = false;
+    if(inWhile == true){
+        childWhile = true;
+    }
+    else{
+        inWhile = true;
+    }
     std::vector<std::unique_ptr<Expr>> body = ParseBlock();
+    if(childWhile == false){
+        inWhile = false;
+    }
     return std::make_unique<IterationExpr>(std::move(body));
 }
 

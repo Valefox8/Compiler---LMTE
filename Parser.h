@@ -65,6 +65,8 @@ class Parser{
     std::unique_ptr<ScopeExpr> GlobalScope = std::make_unique<ScopeExpr>();
     ScopeExpr* currentScope = GlobalScope.get();
 
+    bool inWhile;
+
     std::vector<std::unique_ptr<Expr>> ParseArgs(int expected, std::string what); // Reads a '|' separated argument list
 
     Token Current();                // Returns the token at the position
