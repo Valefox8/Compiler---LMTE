@@ -348,7 +348,6 @@ std::string CodeGen::GenCode(Expr* expr){
         result += "=";
 
         result += GenCode(assign->Value.get());
-        std::cout<< result << std::endl;
         return result;
     }
 

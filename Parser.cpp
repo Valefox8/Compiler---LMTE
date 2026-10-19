@@ -251,12 +251,6 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
     }
 
     std::unique_ptr<Expr> expr = ParseExpression(); // Could be an expression, or the target of an assignment
-    if (dynamic_cast<AttReferenceExpr*>(expr.get()))
-    {
-        std::cout << "wtf" << std::endl;
-    }    
-
-    std::cout << "wtf" << std::endl;
     if (Current().Type == TokenType::Equals) // It was a target, so this is a reassignment
     {
         if (dynamic_cast<IdentifierExpr*>(expr.get()) == nullptr &&
@@ -334,7 +328,6 @@ std::unique_ptr<VarDecExpr> Parser::ParseVarDec(SymbolKind symK, TokenType acces
     ScopeExpr* activeScope = currentScope;      // Check for class scope
     bool isAtt = false;
     std::string varName;
-
 
     std::unique_ptr<Expr> Name; 
     if (symK == SymbolKind::Attribute){
@@ -425,7 +418,7 @@ std::vector<std::unique_ptr<ParameterExpr>> Parser::ParseParams(){
         std::unique_ptr<ParameterExpr> newParaExpr = std::make_unique<ParameterExpr>(paramName, paramType);
 
         std::unique_ptr<SymbolEntry> newEntry =  std::make_unique<SymbolEntry>
-        (paramName, paramType, SymbolKind::Parameter, newParaExpr.get());
+            (paramName, paramType, SymbolKind::Parameter, newParaExpr.get());
         currentScope->Insert(paramName, std::move(newEntry));
 
         params.push_back(std::move(newParaExpr));
@@ -557,7 +550,6 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(int expected, std::string n
             }
 
             Advance(); // Move past the '|'
-            std::cout << Current().Value <<std::endl;
         }
 
         args.push_back(ParseExpression());
@@ -620,7 +612,6 @@ std::unique_ptr<AttReferenceExpr> Parser::ParseAttributeReference(bool declarati
     Advance();      // Move pass the arrow
 
     if (Current().Type == TokenType::Call) {
-        // std::cout<< Current().Value <<std::endl;
         SymbolEntry* methodSymbol = primaryClassDecExpr->LookUpLocal(Peek().Value);
         if (methodSymbol->SymK != SymbolKind::Method){
             throw std::runtime_error(primarySymbol->Name + "has no method: " + methodSymbol->Name);
