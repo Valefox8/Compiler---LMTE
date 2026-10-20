@@ -506,8 +506,9 @@ std::unique_ptr<ConditionalStatementStructExpr> Parser::ParseConditionalStatemen
 std::unique_ptr<FunctionDecExpr> Parser::ParseFunctionDec(SymbolKind symK, TokenType access){
     Advance();                          // Move past FUNCTION
     std::string name = Advance().Value; // Get the function name
+    bool isMethod = (symK == SymbolKind::Method) ? true : false;
     
-    std::unique_ptr<FunctionDecExpr> newFuncDecExpr = std::make_unique<FunctionDecExpr>(name, currentScope, access);
+    std::unique_ptr<FunctionDecExpr> newFuncDecExpr = std::make_unique<FunctionDecExpr>(name, isMethod, currentScope, access);
 
     // Change the current scope so that stuff in the block is added to the correct syntax table
     currentScope = newFuncDecExpr.get();
@@ -527,7 +528,7 @@ std::unique_ptr<FunctionDecExpr> Parser::ParseFunctionDec(SymbolKind symK, Token
     newFuncDecExpr->Body = std::move(body);
     newFuncDecExpr->Param = std::move(params);
 
-    return std::move(newFuncDecExpr);
+    return newFuncDecExpr;
 }
 
 // Follows grammer rule   <ReturnStatement> -> leave <Expression>
@@ -578,7 +579,6 @@ std::unique_ptr<FunctionCallExpr> Parser::ParseFunctionCall(ClassDecExpr* primar
 
     FunctionDecExpr* funcDecExpr = dynamic_cast<FunctionDecExpr*>(funcSymbol->Expression);
 
-    
     std::vector<ParameterExpr*> expected = activeScope->GetFunctionPara(funcName);
 
     std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected.size(), funcName);
@@ -686,7 +686,7 @@ std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(){ // Parses class declarati
         // Parsing the constructor.
         if (currentType == TokenType::Function && Peek().Type == TokenType::SELF)
         {
-            std::unique_ptr<FunctionDecExpr> classMethodExpr = ParseFunctionDec(SymbolKind::Method);
+            std::unique_ptr<FunctionDecExpr> classMethodExpr = ParseFunctionDec(SymbolKind::Method, TokenType::Public);
             newClassDecExpr->Body.push_back(std::move(classMethodExpr));
             continue;
         }
@@ -723,7 +723,7 @@ std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(){ // Parses class declarati
 
     currentScope->Insert(className, std::move(newEntry));
 
-    return std::move(newClassDecExpr);
+    return newClassDecExpr;
 }
 
 
@@ -738,6 +738,7 @@ std::unique_ptr<ObjectDecExpr> Parser::ParseObjectDec()// Parses 'CName obj = CN
     {
         throw std::runtime_error("Cannot Recognize Class: " + className);
     }
+    
     ClassDecExpr* classExpr = dynamic_cast<ClassDecExpr*>(classSymbol->Expression);
     
 

@@ -294,16 +294,18 @@ class ParameterExpr : public Expr {
 class FunctionDecExpr : public ScopeExpr {
     public:
         TokenType Access;
-
+        bool IsMethod;
         std::vector<std::unique_ptr<ParameterExpr>> Param;   // Parameters type and name
         
         FunctionDecExpr
         ( 
             std::string name,
+            bool isMethod,
             ScopeExpr* parentScope = nullptr,
             TokenType access = TokenType::Public
         )   :   ScopeExpr(name, parentScope),
-                Access(access)
+                Access(access),
+                IsMethod(isMethod)
         {
         }
 
@@ -315,7 +317,7 @@ class FunctionCallExpr : public Expr{
         FunctionDecExpr* FuncDecExpr;                   // The function  being called
         std::vector<std::unique_ptr<Expr>> Args;        // The arguments passed to it
 
-        FunctionCallExpr(FunctionDecExpr* funcDecExpr, std::vector<std::unique_ptr<Expr>> args, std::unique_ptr<Expr> callee = nullptr)
+        FunctionCallExpr(FunctionDecExpr* funcDecExpr, std::vector<std::unique_ptr<Expr>> args)
         {
             FuncDecExpr = funcDecExpr;
             Args = std::move(args);

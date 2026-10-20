@@ -79,18 +79,18 @@ bool ScopeExpr::Update(const std::string& varName, std::unique_ptr<SymbolEntry> 
 // Needed for variable dec and method call in the scope of a class dec
 // Return type: null if cant find a class dec
 // Pointer to Class dec expr if can find one
-ClassDecExpr *ScopeExpr::GetParentClass(){
-    
+ClassDecExpr* ScopeExpr::GetParentClass(){
+
     if (ParentScope == nullptr){
+
         return nullptr;
     }
-    
-    ClassDecExpr* parentClassDecExpr = nullptr;
+
+    ClassDecExpr* parentClassDecExpr;
 
     if (parentClassDecExpr = dynamic_cast<ClassDecExpr*>(ParentScope)) {
         return parentClassDecExpr;
     }
-
 
     return ParentScope->GetParentClass();
 }
@@ -109,6 +109,7 @@ std::string ScopeExpr::GetNames(){
 // Returning a vector of poiters to each parameter declaration expression stored inside a function expression
 std::vector<ParameterExpr*> ScopeExpr::GetFunctionPara(std::string funcName)
 {
+    
     std::vector<ParameterExpr*> allPara;
     if (
         funcName == "SELF" && 
@@ -125,12 +126,19 @@ std::vector<ParameterExpr*> ScopeExpr::GetFunctionPara(std::string funcName)
     }
 
     // Iterating through each Prameter Expression stored inside a function expression
-    FunctionDecExpr* methodExpr = dynamic_cast<FunctionDecExpr*>(LookUp(funcName)->Expression);
+    FunctionDecExpr* methodExpr = dynamic_cast<FunctionDecExpr*>(symbol->Expression);
+
+    if (!methodExpr)
+    {
+        throw std::runtime_error("Cant function and return parameter: " + funcName);
+    }
+
     size_t length = methodExpr->Param.size();
     for (size_t i = 0; i < length; i++)
     {
         allPara.push_back(methodExpr->Param[i].get());
     }
+
     return allPara;
 };
 

@@ -1,24 +1,91 @@
 
-<!-- Classes -->
-CMyVehicleC:
-    private:
-        FUNCTION DECELERATE Vnum speed1 | Vnum speed2:
-            speed1 = speed1 add speed2
 
-            CMyVehdfdicleC:
-                FUNCTION SELF Vnum speed | Vnum value:
-                    public Vnum selfish -> speed = speed
+<!-- Arithmetic -->
+1 mul (2 add 3) div 10
+
+<!-- Variables -->
+Vnum a = 12
+Vletter b = #b#
+VCharacter e = q
+VDigit f = 7
+
+<!-- Lists -->
+"randoms | 1 | 2 add 3 | 10"
+randoms.at[0]
+randoms.at[2]
+randoms.size()
+
+Vnum x = 10
+iguessif(x equal 5):
+    a = 12;
+guessnot:
+    a = 6;
+
+
+iguessif(x equal 5):
+    forwhencake:
+        iguessif(x lessThan 5):
+            forwhencake:
+                handbrake
+            ;
+        ;
+        guessthis(x moreThan 5 ro x isTotallyDefinitelyNotEqualTo 10):
+            forwhencake:
+                handbrake
+            ;
+        ;
+        guessnot:
+            iguessif(x isTotallyDefinitelyNotEqualTo 5):
+                iguessif(x equalLessThan 10 dna x equalMoreThan 5):
+                    x = 7
+                ;
+                guessnot:
+                    x = 1
                 ;
             ;
+            guessnot:
+                forwhencake:
+                    handbrake
+                ;
+            ;
+        ;
+    handbrake
+    ;
+;
 
+
+<!-- Functions -->
+FUNCTION Addition Vnum num1 | Vnum num2:
+    Vnum result = num1 add num2
+    leave result
+;
+Vnum age = f Addition 3 | 5
+
+
+<!-- Classes -->
+CMyVehicleC:
+    public:
+        FUNCTION DECELERATE Vnum speed1 | Vnum speed2:
+            speed1 = speed1 add speed2
+            iguessif(x equal 5):
+                a = 12;
+            guessnot:
+                a = 6;
+            leave 5
         ;
     ;
+    private:
+        FUNCTION ALL:
+            leave 5
+        ;
+    ;
+    
     FUNCTION SELF Vnum speed | Vnum value:
         public Vnum selfish -> speed = speed
-        private Vnum selfish -> value = value
-        public Vnum selfish -> gg = 9
+        public Vnum selfish -> value = value
         selfish -> speed = selfish -> speed add 1
-        selfish -> speed = selfish -> f DECELERATE 3 | 3
+        selfish -> f DECELERATE 3 | 3
+        selfish -> f ALL
         FUNCTION DECELERATE Vnum speed1 | Vnum speed2:
             leave 5
         ;
@@ -27,11 +94,69 @@ CMyVehicleC:
     ;
 
 ;
-Vnum a = 10
-Vnum x = 10
 
+CMyVehdfdicleC:
+;
+
+<!-- Reassignment -->
+a = a add 1
+
+<!-- Objects -->
 CMyVehicleC eee = CMyVehicleC 3 | 10
 
+ a = eee -> f DECELERATE 3 | 3 
 
-<!-- a = eee -> f DECELERATE 3 | 3 -->
 
+
+<!-- stuff that should NOT get parsed -->
+<!-- no keyword checking for function dec -->
+FUNCTION = Vnum speed1 | Vnum speed2:
+    leave 5
+;
+
+<!-- Not " symbol at the end -->
+"hello | 1 | 2 add 3 | 10 lol
+
+
+<!-- handbrake outside while loop -->
+handbrake
+
+<!-- Declared variable can be assigned different type -->
+Vboolean new = cake
+new = 7
+
+<!-- Correct but not allowed -->
+<!-- Updating string. Remove the comment symbol to see for ur self -->
+
+Vletter new1 = #b#
+<!-- new1 = #c# -->
+
+Vwords nwe2 = $abc$
+<!-- nwe2 = $hello$ -->
+
+
+<!-- cant return string -->
+FUNCTION NewFunction2 Vnum num1 | Vnum num2:
+    Vnum result = num1 add num2
+    <!-- leave $hello$ -->
+    leave cake
+;
+Vnum new6 = f NewFunction2 3 | 3
+
+<!-- Function returns wrong type but still acepted -->
+Vnum new3 = f NewFunction2 3 | 3
+
+<!-- special symbol/char can be written to python -->
+Vnum 4 = eee -> f DECELERATE new3 | 3
+Vnum if = eee -> f DECELERATE new3 | 3
+
+
+FUNCTION ADD Vnum speed1 | Vnum speed2:
+    leave 5
+;
+Vwords c = $abc$
+Vboolean d = cake
+Vnum new4 = f ADD c | d
+
+<!-- Correct but not allowed -->
+<!-- Vboolean new5 = x moreThan 5 ro x isTotallyDefinitelyNotEqualTo 10  -->

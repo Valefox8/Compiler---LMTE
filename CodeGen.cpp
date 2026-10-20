@@ -234,9 +234,8 @@ std::string CodeGen::GenCode(Expr* expr){
     // Funciton/Method Declaration
     if (FunctionDecExpr* function = dynamic_cast<FunctionDecExpr*>(expr))
     {
-
         std::string result = "def ";
-
+        
         switch (function->Access)
         {
             case TokenType::Protected:
@@ -246,17 +245,22 @@ std::string CodeGen::GenCode(Expr* expr){
                 result += "__";
                 break;
         }
+
+
         // Check if its a constructor
         result += (function->Name == "SELF") ? "__init__ (" :  function->Name + " (";
 
         // Adding parameters
-        if (function->GetParentClass()) 
+        if (function->IsMethod) 
         {
             result += "selfish, ";
         }
+
+
         auto& para = function->Param;
         for (size_t i = 0; i < para.size(); ++i) 
         {
+            
             result += para[i]->Name;
             if (i < para.size() - 1) 
             { 
@@ -299,10 +303,8 @@ std::string CodeGen::GenCode(Expr* expr){
             {
                 result += ", ";
             }
-
             result += GenCode(call->Args[i].get());
         }
-
         result += ")";
         return result;
     }
