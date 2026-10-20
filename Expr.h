@@ -294,19 +294,16 @@ class ParameterExpr : public Expr {
 class FunctionDecExpr : public ScopeExpr {
     public:
         TokenType Access;
-        bool IsMethod;
 
         std::vector<std::unique_ptr<ParameterExpr>> Param;   // Parameters type and name
         
         FunctionDecExpr
         ( 
-            std::string name = "",
-            ScopeExpr* parentScopeTable = nullptr,
-            bool isMethod = false,
+            std::string name,
+            ScopeExpr* parentScope = nullptr,
             TokenType access = TokenType::Public
-        )   :   ScopeExpr(name, parentScopeTable),
-                Access(access),
-                IsMethod(isMethod)
+        )   :   ScopeExpr(name, parentScope),
+                Access(access)
         {
         }
 
@@ -342,8 +339,8 @@ class ClassDecExpr : public ScopeExpr {
 
         ClassDecExpr
         (
-            std::string name = "", 
-            ScopeExpr* parentScope = nullptr
+            std::string name, 
+            ScopeExpr* parentScope
         )   :   ScopeExpr(name, parentScope)
         {
             std::vector<std::unique_ptr<Expr>> dummy;

@@ -136,16 +136,6 @@ std::string CodeGen::GenCode(Expr* expr){
         std::string result;
 
         result += GenCode(decl->Name.get());
-
-        switch (decl->Access)
-        {
-            case TokenType::Protected:
-                result += "_";
-                break;
-            case TokenType::Private:
-                result += "__";
-                break;
-        }
         result += "=";
         result += GenCode(decl->Value.get());
 
@@ -260,7 +250,7 @@ std::string CodeGen::GenCode(Expr* expr){
         result += (function->Name == "SELF") ? "__init__ (" :  function->Name + " (";
 
         // Adding parameters
-        if (function->IsMethod) 
+        if (function->GetParentClass()) 
         {
             result += "selfish, ";
         }
@@ -378,6 +368,16 @@ std::string CodeGen::GenCode(Expr* expr){
         result += GenCode(attRef->Primary.get());
 
         result += ".";
+        switch (attRef->Access)
+        {
+            case TokenType::Protected:
+                result += "_";
+                break;
+            case TokenType::Private:
+                result += "__";
+                break;
+        }
+
 
         result += GenCode(attRef->Attribute.get());
 
