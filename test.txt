@@ -74,20 +74,22 @@ CMyVehicleC:
             leave 5
         ;
     ;
+
     private:
         FUNCTION ALL:
             leave 5
         ;
     ;
-    
+
     FUNCTION SELF Vnum speed | Vnum value:
         public Vnum selfish -> speed = speed
         public Vnum selfish -> value = value
         selfish -> speed = selfish -> speed add 1
         selfish -> f DECELERATE 3 | 3
-        selfish -> f ALL
         FUNCTION DECELERATE Vnum speed1 | Vnum speed2:
-            leave 5
+            FUNCTION DECELERATE Vnum speed1 | Vnum speed2:
+                selfish -> f ALL
+            ;
         ;
     ;
     public:
@@ -104,7 +106,7 @@ a = a add 1
 <!-- Objects -->
 CMyVehicleC eee = CMyVehicleC 3 | 10
 
- a = eee -> f DECELERATE 3 | 3 
+a = eee -> f DECELERATE 3 | 3
 
 
 

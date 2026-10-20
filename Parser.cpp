@@ -122,9 +122,9 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
         // If its not an arrow or a dot function then its just a normal variable/parameter
         // Check if its declared
         Expr* identifier = currentScope->LookUp(name)->Expression;
-        if (!dynamic_cast<VarDecExpr*>(identifier) && !dynamic_cast<ParameterExpr*>(identifier)){
+        if (!dynamic_cast<VarDecExpr*>(identifier) && !dynamic_cast<ParameterExpr*>(identifier))
             throw std::runtime_error("Undeclared Variable: " + name);
-        }
+
         return std::make_unique<IdentifierExpr>(name); // A variable name
     }
 
@@ -566,30 +566,31 @@ std::unique_ptr<FunctionCallExpr> Parser::ParseFunctionCall(ClassDecExpr* primar
     Advance();
     std::string funcName = Advance().Value; 
 
-    
+    // Get the scope this function was called in. 
+    // We need it because we can call a class method in the scope of a function as long as that function is in a class dec scope.
     ScopeExpr* activeScope =  currentScope;
-    if (primaryClassDecExpr){
-        activeScope = primaryClassDecExpr;
-    }
+    if (primaryClassDecExpr) activeScope = primaryClassDecExpr;
 
+    // Check current scope symbol table to see if function exists, and to returns the correct expression
     SymbolEntry* funcSymbol = activeScope->LookUp(funcName);
-    if (funcSymbol->SymK != SymbolKind::Function && funcSymbol->SymK != SymbolKind::Method) {
+    if (funcSymbol->SymK != SymbolKind::Function && funcSymbol->SymK != SymbolKind::Method) 
         throw std::runtime_error("Cannot find function/method " + funcName);
-    }
-
+    
     FunctionDecExpr* funcDecExpr = dynamic_cast<FunctionDecExpr*>(funcSymbol->Expression);
+    if (!funcDecExpr)   
+        throw std::runtime_error("Symbol talbe store wrong expr for function: " + funcName);
 
     std::vector<ParameterExpr*> expected = activeScope->GetFunctionPara(funcName);
 
     std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected.size(), funcName);
 
-    
     return std::make_unique<FunctionCallExpr>(funcDecExpr, std::move(args));
 }
 
 
 std::unique_ptr<AttReferenceExpr> Parser::ParseAttributeReference(bool declaration, TokenType access)
 {
+    // Get the Callee/Primary name can create an Id expression. 
     Token token = Current();
     std::unique_ptr<IdentifierExpr> primaryName = std::make_unique<IdentifierExpr>(token.Value);
     Advance();      // Move pass the caller
@@ -601,6 +602,7 @@ std::unique_ptr<AttReferenceExpr> Parser::ParseAttributeReference(bool declarati
         throw std::runtime_error("Variable does not have an arrow expression: " + token.Value);
     }
 
+    // Check if its Vnum selfish -> ATTRIBUTE. Because both declaration and call use -> 
     if (declaration) {
         std::unique_ptr<IdentifierExpr> attributeName = std::make_unique<IdentifierExpr>(Advance().Value);
         return std::make_unique<AttReferenceExpr>(std::move(primaryName), std::move(attributeName), access);
@@ -610,7 +612,7 @@ std::unique_ptr<AttReferenceExpr> Parser::ParseAttributeReference(bool declarati
     // Check if we're inside the scope of a class
     ClassDecExpr* primaryClassDecExpr;
     ClassDecExpr* potentialClassExpr = dynamic_cast<ClassDecExpr*>(primarySymbol->Expression);
-    if (token.Value == "selfish" && potentialClassExpr) {
+    if (token.Value == "selfish" && potentialClassExpr) {       // Every class dec expr will have selfish in the symbol table points it the expr  
         primaryClassDecExpr = potentialClassExpr;
     } else {
         ObjectDecExpr* primaryExpr = dynamic_cast<ObjectDecExpr*>(primarySymbol->Expression);
@@ -618,29 +620,30 @@ std::unique_ptr<AttReferenceExpr> Parser::ParseAttributeReference(bool declarati
     }
 
 
-
+    // Use the arrow function to call function  selfish -> f FUNCTION
     if (Current().Type == TokenType::Call) {
         SymbolEntry* methodSymbol = primaryClassDecExpr->LookUpLocal(Peek().Value);
 
-        if (!currentScope->GetParentClass() && methodSymbol->Access != TokenType::Public) {
+        // Check if its a public method when called outside a class dec
+        if (!currentScope->GetParentClass() && methodSymbol->Access != TokenType::Public) 
             throw std::runtime_error(primarySymbol->Name + " has method: " + methodSymbol->Name + " but cant be called outside class dec");
-        }
-
-        if (methodSymbol->SymK != SymbolKind::Method){
+        if (methodSymbol->SymK != SymbolKind::Method)
             throw std::runtime_error(primarySymbol->Name + " has no method: " + methodSymbol->Name);
-        }
+
+        // Just normal function call expr
         std::unique_ptr<FunctionCallExpr> methodCallExpr = ParseFunctionCall(primaryClassDecExpr);
         return std::make_unique<AttReferenceExpr>(std::move(primaryName), std::move(methodCallExpr), methodSymbol->Access);
     }
 
-
+    // Check for selfish -> f ATTRIBUTE
     SymbolEntry* identifierSymbol = primaryClassDecExpr->LookUpLocal(Advance().Value);
     if (identifierSymbol->SymK == SymbolKind::Attribute)
     {
-        if (!currentScope->GetParentClass() && identifierSymbol->Access != TokenType::Public) {
+        // Check if its a public method when called outside a class dec
+        if (!currentScope->GetParentClass() && identifierSymbol->Access != TokenType::Public) 
             throw std::runtime_error(primarySymbol->Name + "has attribute: " + identifierSymbol->Name + " but cant be called outside class dec");
-        }
 
+        // Just a normal id expr
         std::unique_ptr<IdentifierExpr> attributeName = std::make_unique<IdentifierExpr>(identifierSymbol->Name);
         return std::make_unique<AttReferenceExpr>(std::move(primaryName), std::move(attributeName), identifierSymbol->Access);
     }
@@ -659,13 +662,13 @@ std::unique_ptr<VarDecExpr> Parser::ParseAttributeDec(){ // Parses 'public Vnum 
         throw std::runtime_error("Cant find parent class to declare: " + varName);
     }
 
-    std::unique_ptr<Expr> Name = ParseAttributeReference(true, access);   // Getting the expression for selfish -> varName
+    // Getting the expression for selfish -> ATTRIBUTE_NAME
+    std::unique_ptr<Expr> Name = ParseAttributeReference(true, access);   
 
     return CreateAndRegisterVarDec (varType, varName, std::move(Name), SymbolKind::Attribute, currentScope->GetParentClass(), access);
 }
 
 // Follows grammer rule   <Methods> -> <FunctionDeclaration> | <FunctionDeclaration> <Methods>
-
 std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(){ // Parses class declarations
 
     std::string className = Advance().Value;    // Get the class name
@@ -735,20 +738,17 @@ std::unique_ptr<ObjectDecExpr> Parser::ParseObjectDec()// Parses 'CName obj = CN
     // Class was not declared
     SymbolEntry* classSymbol = currentScope->LookUp(className);
     if (classSymbol->SymK != SymbolKind::Class) 
-    {
         throw std::runtime_error("Cannot Recognize Class: " + className);
-    }
     
     ClassDecExpr* classExpr = dynamic_cast<ClassDecExpr*>(classSymbol->Expression);
-    
+    if (!classExpr)
+        throw std::runtime_error("Symbol talbe store wrong expr for class: " + className);
 
     Advance(); // Move past the '='
 
     Token secondToken = Advance();
     if (secondToken.Value != className)
-    {
         throw std::runtime_error("Object " + objName + " was declared as " + className + " but built as " + secondToken.Value);
-    }
 
 
     // How many arguments the constructor takes

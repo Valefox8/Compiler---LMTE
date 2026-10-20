@@ -98,12 +98,10 @@ class IdentifierExpr : public Expr  // Identifies a variable/identifier
 {
 public:
     std::string Name;
-    std::unique_ptr<Expr> Callee;
 
-    IdentifierExpr(std::string name, std::unique_ptr<Expr> callee = nullptr)
+    IdentifierExpr(std::string name)
     {
         Name = name;
-        Callee = std::move(callee);
     }
 };
 
