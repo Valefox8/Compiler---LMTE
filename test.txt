@@ -53,14 +53,7 @@ iguessif(x equal 5):
     ;
 ;
 
-
 <!-- Functions -->
-FUNCTION Addition Vnum num1 | Vnum num2:
-    Vnum result = num1 add num2
-    leave result
-;
-Vnum age = f Addition 3 | 5
-
 
 <!-- Classes -->
 CMyVehicleC:
@@ -74,10 +67,8 @@ CMyVehicleC:
             leave 5
         ;
     ;
-
     private:
         FUNCTION ALL:
-            leave 5
         ;
     ;
 
@@ -85,28 +76,30 @@ CMyVehicleC:
         public Vnum selfish -> speed = speed
         public Vnum selfish -> value = value
         selfish -> speed = selfish -> speed add 1
-        selfish -> f DECELERATE 3 | 3
+        selfish -> f ALL
         FUNCTION DECELERATE Vnum speed1 | Vnum speed2:
-            FUNCTION DECELERATE Vnum speed1 | Vnum speed2:
-                selfish -> f ALL
-            ;
+            leave 5
         ;
     ;
-    public:
-    ;
-
 ;
 
-CMyVehdfdicleC:
-;
-
-<!-- Reassignment -->
-a = a add 1
 
 <!-- Objects -->
 CMyVehicleC eee = CMyVehicleC 3 | 10
 
+
+
+FUNCTION Addition Vnum num1 | Vnum num2:
+    Vnum result = num1 add num2
+    leave result
+;
+
 a = eee -> f DECELERATE 3 | 3
+
+Vnum age = f Addition eee -> speed | 3
+
+CMyVehicleC Helo = CMyVehicleC 1111 | 10
+
 
 
 
@@ -116,12 +109,7 @@ FUNCTION = Vnum speed1 | Vnum speed2:
     leave 5
 ;
 
-<!-- Not " symbol at the end -->
-"hello | 1 | 2 add 3 | 10 lol
 
-
-<!-- handbrake outside while loop -->
-handbrake
 
 <!-- Declared variable can be assigned different type -->
 Vboolean new = cake
@@ -131,7 +119,7 @@ new = 7
 <!-- Updating string. Remove the comment symbol to see for ur self -->
 
 Vletter new1 = #b#
-<!-- new1 = #c# -->
+new1 = #c# 
 
 Vwords nwe2 = $abc$
 <!-- nwe2 = $hello$ -->
@@ -158,7 +146,13 @@ FUNCTION ADD Vnum speed1 | Vnum speed2:
 ;
 Vwords c = $abc$
 Vboolean d = cake
-Vnum new4 = f ADD c | d
 
 <!-- Correct but not allowed -->
 <!-- Vboolean new5 = x moreThan 5 ro x isTotallyDefinitelyNotEqualTo 10  -->
+
+
+
+iguessif(x equal 5):
+    Vnum new10 = 12;
+guessnot:
+    Vnum new10 = 12;

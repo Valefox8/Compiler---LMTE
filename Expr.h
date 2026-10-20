@@ -363,11 +363,13 @@ class AttReferenceExpr : public Expr {
         std::unique_ptr<IdentifierExpr> Primary;        // An IdentifierExpr or an AttributeExpr
         std::unique_ptr<Expr> Attribute;                // Whatever it is being set to
         TokenType Access;                               // Public, Private or Protected
+        TokenType Type;
 
-        AttReferenceExpr(std::unique_ptr<IdentifierExpr> primary, std::unique_ptr<Expr> attribute, TokenType access = TokenType::Public)
+        AttReferenceExpr(std::unique_ptr<IdentifierExpr> primary, std::unique_ptr<Expr> attribute, TokenType type, TokenType access = TokenType::Public)
         {
             Primary = std::move(primary);
             Attribute = std::move(attribute);
+            Type = type;
             Access = access;
         }
 };
