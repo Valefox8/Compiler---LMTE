@@ -623,11 +623,80 @@ std::unique_ptr<ReturnExpr> Parser::ParseReturn(){
     return std::make_unique<ReturnExpr>(ParseExpression());
 }
 
+// Turns a type token into its name for error messages
+static std::string TypeName(TokenType type){
+    switch (type)
+    {
+        case TokenType::Vnum:       return "Vnum";
+        case TokenType::Vwords:     return "Vwords";
+        case TokenType::Vboolean:   return "Vboolean";
+        case TokenType::Vletter:    return "Vletter";
+        case TokenType::VCharacter: return "VCharacter";
+        case TokenType::VDigit:     return "VDigit";
+        case TokenType::List:       return "List";
+        default:                    return "unknown";
+    }
+}
+
+// Works out the type of an expression so it can be compared with a parameter type
+// Returns TokenType::Custom when the type can't be known yet (function return values, list.at)
+TokenType Parser::GetExprType(Expr* expr){
+    if (dynamic_cast<NumberExpr*>(expr))    return TokenType::Vnum;
+    if (dynamic_cast<WordExpr*>(expr))      return TokenType::Vwords;
+    if (dynamic_cast<LetterExpr*>(expr))    return TokenType::Vletter;
+    if (dynamic_cast<BooleanExpr*>(expr))   return TokenType::Vboolean;
+    if (dynamic_cast<CharacterExpr*>(expr)) return TokenType::VCharacter;
+    if (dynamic_cast<DigitExpr*>(expr))     return TokenType::VDigit;
+    if (dynamic_cast<ListSizeExpr*>(expr))  return TokenType::Vnum;
+
+    if (BinaryExpr* binary = dynamic_cast<BinaryExpr*>(expr))
+    {
+        if (
+            binary->Operator == TokenType::Add || 
+            binary->Operator == TokenType::Sub ||
+            binary->Operator == TokenType::Mul || 
+            binary->Operator == TokenType::Div || 
+            binary->Operator == TokenType::Mod
+        ) {
+            TokenType left = GetExprType(binary->Left.get());
+            TokenType right = GetExprType(binary->Right.get());
+
+            if (left != TokenType::Vnum && left != TokenType::VDigit && left != TokenType::Custom) return left;
+            if (right != TokenType::Vnum && right != TokenType::VDigit && right != TokenType::Custom) return right;
+            return TokenType::Vnum;
+        }
+
+        return TokenType::Vboolean;
+    }
+
+    if (IdentifierExpr* identifier = dynamic_cast<IdentifierExpr*>(expr))
+    {
+        // Attribute like speed, look it up in the class
+        if (IdentifierExpr* callee = dynamic_cast<IdentifierExpr*>(identifier->Callee.get()))
+        {
+            Expr* calleeExpr = currentScope->LookUp(callee->Name)->Expression;
+            ClassDecExpr* classExpr = dynamic_cast<ClassDecExpr*>(calleeExpr);
+
+            if (ObjectDecExpr* objExpr = dynamic_cast<ObjectDecExpr*>(calleeExpr))
+            {
+                classExpr = objExpr->ClassDefExpr;
+            }
+
+            return classExpr->LookUpLocal(identifier->Name)->Type;
+        }
+
+        return currentScope->LookUp(identifier->Name)->Type; // Normal variable or parameter
+    }
+
+    return TokenType::Custom; // Function calls and list.at dont have a known type yet
+}
+
 // Reads exactly as many arguments as were declared, with a '|' between each.
-std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(int expected, std::string name){
+// Each argument has to match the type of the parameter it lines up with.
+std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(std::vector<ParameterExpr*> expected, std::string name){
     std::vector<std::unique_ptr<Expr>> args;
 
-    for (int i = 0; i < expected; i++)
+    for (size_t i = 0; i < expected.size(); i++)
     {
         if (i > 0)
         {
@@ -639,7 +708,30 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(int expected, std::string n
             Advance(); // Move past the '|'
         }
 
-        args.push_back(ParseExpression());
+        std::unique_ptr<Expr> arg = ParseExpression();
+
+        // Compare the argument type with the parameter type
+        TokenType wanted = expected[i]->Type;
+        TokenType given = GetExprType(arg.get());
+
+        bool matches = 
+            given == wanted ||
+            given == TokenType::Custom ||
+            (wanted == TokenType::Vnum && given == TokenType::VDigit);
+
+        // A single digit number like 7 can be passed into a VDigit
+        NumberExpr* number = dynamic_cast<NumberExpr*>(arg.get());
+        if (wanted == TokenType::VDigit && number && number->Value.length() == 1)
+        {
+            matches = true;
+        }
+
+        if (!matches)
+        {
+            throw std::runtime_error(name + " argument '" + expected[i]->Name + "' should be " + TypeName(wanted) + " but got " + TypeName(given));
+        }
+
+        args.push_back(std::move(arg));
     }
 
     return args;
@@ -683,7 +775,7 @@ std::unique_ptr<FunctionCallExpr> Parser::ParseFunctionCall(ClassDecExpr* classE
 
     std::vector<ParameterExpr*> expected = activeScope->GetFunctionPara(funcName);
 
-    std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected.size(), "Method " + funcName);
+    std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, "Method " + funcName);
 
     return std::make_unique<FunctionCallExpr>(funcDecExpr, std::move(args), std::move(callee));
 }
@@ -789,7 +881,7 @@ std::unique_ptr<ObjectDecExpr> Parser::ParseObjectDec()// Parses 'CName obj = CN
 
     // How many arguments the constructor takes
     std::vector<ParameterExpr*> expected = classExpr->GetFunctionPara(); 
-    std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected.size(), "Class " + className);
+    std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, "Class " + className);
 
     // Get the class expression and create new object expression
     std::unique_ptr<ObjectDecExpr> newObjDecExpr = 

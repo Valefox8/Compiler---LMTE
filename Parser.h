@@ -67,7 +67,8 @@ class Parser{
 
     bool inWhile;
 
-    std::vector<std::unique_ptr<Expr>> ParseArgs(int expected, std::string what); // Reads a '|' separated argument list
+    std::vector<std::unique_ptr<Expr>> ParseArgs(std::vector<ParameterExpr*> expected, std::string name); // Reads a '|' separated argument list and checks each type
+    TokenType GetExprType(Expr* expr);  // Works out what type an expression gives back
 
     Token Current();                // Returns the token at the position
     Token Advance();                // Returns the position token and increments the position
