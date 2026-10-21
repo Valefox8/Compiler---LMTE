@@ -242,28 +242,23 @@ class ListSizeExpr : public Expr{
     }
 };
 
-class IterationExpr : public Expr {
-    public: 
-        std::vector<std::unique_ptr<Expr>> Body;
-    
-        IterationExpr(std::vector<std::unique_ptr<Expr>> body)
-        {
-            Body = std::move(body);
+class IterationExpr : public ScopeExpr {
+    public:
+        IterationExpr(ScopeExpr* parentScope = nullptr) : ScopeExpr(parentScope){
+
         }
 };
 
 class HandbrakeExpr : public Expr{};
 
-class ConditionalStatementExpr : public Expr{
+class ConditionalStatementExpr : public ScopeExpr{
     public:
         TokenType Type;
         std::unique_ptr<Expr> Condition;
-        std::vector<std::unique_ptr<Expr>> Body;
 
-        ConditionalStatementExpr(TokenType type, std::unique_ptr<Expr> cond = nullptr, std::vector<std::unique_ptr<Expr>> body = {}){
+        ConditionalStatementExpr(TokenType type, std::unique_ptr<Expr> cond = nullptr, ScopeExpr* parentScope = nullptr) : ScopeExpr(parentScope){
             Type = type;
             Condition = std::move(cond);
-            Body = std::move(body);
         }
 };
 

@@ -541,11 +541,19 @@ std::unique_ptr<IterationExpr> Parser::ParseIteration(){
     else{
         inWhile = true;
     }
-    std::vector<std::unique_ptr<Expr>> body = ParseBlock();
+    
+    std::unique_ptr<IterationExpr> newIterationExpr = std::make_unique<IterationExpr>(currentScope);
+    
+    currentScope = newIterationExpr.get();
+
+    newIterationExpr->Body = ParseBlock();
+
+    currentScope = newIterationExpr->ParentScope;
+    
     if(childWhile == false){
         inWhile = false;
     }
-    return std::make_unique<IterationExpr>(std::move(body));
+    return std::move(newIterationExpr);
 }
 
 std::unique_ptr<HandbrakeExpr> Parser::ParseBreak(){
@@ -569,9 +577,18 @@ std::unique_ptr<ConditionalStatementExpr> Parser::ParseConditionalStatement(){
             throw std::runtime_error("Invalid Condition, exprect structure <variable> <operator> <variable> or boolean value");
     }
 
-    std::vector<std::unique_ptr<Expr>> body = ParseBlock();
+    //create new scope
+    std::unique_ptr<ConditionalStatementExpr> newCondStateExpr = std::make_unique<ConditionalStatementExpr>(type, std::move(condition), currentScope);
+    
+    currentScope = newCondStateExpr.get();
 
-    return std::make_unique<ConditionalStatementExpr>(type, std::move(condition), std::move(body));
+    // generate body
+    newCondStateExpr->Body = ParseBlock();
+
+    // reset to parent scope after finsih body part
+    currentScope = currentScope->ParentScope;
+
+    return std::move(newCondStateExpr);
 }
 
 std::unique_ptr<ConditionalStatementStructExpr> Parser::ParseConditionalStatementStructure() {
