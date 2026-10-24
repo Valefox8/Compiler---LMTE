@@ -95,6 +95,8 @@ enum class TokenType
     // USE LATER 
     Custom,
     List,
+    Nothing, // Return type of a function that doesnt leave anything (like SELF)
+
 };
 
 #endif

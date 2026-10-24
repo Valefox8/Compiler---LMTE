@@ -292,6 +292,8 @@ class FunctionDecExpr : public ScopeExpr {
 
         std::string Name; // Function name
         std::vector<std::unique_ptr<ParameterExpr>> Param;   // Parameters type and name
+        TokenType ReturnType = TokenType::Nothing; // The type the function leaves, Nothing if it doesnt leave anything
+
         
         FunctionDecExpr
         ( 

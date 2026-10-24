@@ -54,7 +54,7 @@ iguessif(x equal 5):
 
 
 <!-- Functions -->
-FUNCTION Addition Vnum num1 | Vnum num2:
+FUNCTION Vnum Addition Vnum num1 | Vnum num2:
     Vnum result = num1 add num2
     leave result
 ;
@@ -64,7 +64,7 @@ Vnum age = f Addition 3 | 5
 <!-- Classes -->
 CMyVehicleC:
     public:
-        FUNCTION DECELERATE Vnum speed1 | Vnum speed2:
+        FUNCTION Vnum DECELERATE Vnum speed1 | Vnum speed2:
             speed1 = speed1 add speed2
             iguessif(x equal 5):
                 a = 12;
@@ -78,7 +78,7 @@ CMyVehicleC:
         public Vnum selfish -> value = value
         selfish -> speed = selfish -> speed add 1
         selfish -> f DECELERATE 3 | 3
-        FUNCTION DECELERATE Vnum speed1 | Vnum speed2:
+        FUNCTION Vnum DECELERATE Vnum speed1 | Vnum speed2:
             leave 5
         ;
     ;
@@ -97,3 +97,9 @@ a = a add 1
 CMyVehicleC eee = CMyVehicleC 3 | 10
 
 a = eee -> f DECELERATE 3 | 3
+
+FUNCTION Vboolean NewFunction2 Vnum num1 | Vnum num2:
+    Vnum result = num1 add num2
+    leave cake
+;
+Vnum new6 = f NewFunction2 3 | 3

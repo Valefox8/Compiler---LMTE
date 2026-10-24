@@ -330,6 +330,12 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
 
 // Bassically a helper function to make ParseVarDec() shorter.
 std::unique_ptr<Expr> Parser::ParseGetValue(TokenType type){
+    // ParseVarDec checks if right type
+    if (Current().Type == TokenType::Call || Peek().Type == TokenType::Arrow)
+    {
+        return ParseExpression();
+    }
+
     if (type == TokenType::Vwords){
         Token lit = Advance();  // Gets the literal and moves position
         return std::make_unique<WordExpr>(lit.Value);  // Saves this value 
@@ -401,6 +407,8 @@ std::unique_ptr<VarDecExpr> Parser::ParseVarDec(bool isAttribute, TokenType acce
 
     // The function above
     std::unique_ptr<Expr> varValue = ParseGetValue(varType); 
+    // Value must be same type as variable declared
+    CheckType(varType, varValue.get(), "Variable '" + varName + "'");
 
     // Create expression and make new entry to symbol table
     std::unique_ptr<VarDecExpr> newVarDecExpr = std::make_unique<VarDecExpr>(varType, varName, std::move(varValue), access, isAttribute);
@@ -606,12 +614,29 @@ std::unique_ptr<ConditionalStatementStructExpr> Parser::ParseConditionalStatemen
     return std::make_unique<ConditionalStatementStructExpr>(std::move(aConditionStatement));
 }
 
-// Follows grammer rule   <FunctionDeclaration> -> FUNCTION Identifier <ParameterList>: <StatementList>;
+// Follows grammer rule <FunctionDeclaration> -> FUNCTION <ReturnType> Identifier <ParameterList>: <StatementList>;
+// <ReturnType> -> <VariableType> | NOTHING
 std::unique_ptr<FunctionDecExpr> Parser::ParseFunctionDec(){
     Advance();                          // Move past FUNCTION
+
+    // Get the return type if there is one
+    TokenType returnType = TokenType::Nothing;
+    TokenType current = Current().Type;
+    if (
+        current == TokenType::Vnum || 
+        current == TokenType::Vwords || 
+        current == TokenType::Vboolean || 
+        current == TokenType::Vletter || 
+        current == TokenType::VCharacter || 
+        current == TokenType::VDigit
+    ) {
+        returnType = Advance().Type;
+    }
+
     std::string name = Advance().Value; // Get the function name
     
     std::unique_ptr<FunctionDecExpr> newFuncDecExpr = std::make_unique<FunctionDecExpr>(name, currentScope);
+    newFuncDecExpr->ReturnType = returnType;
 
     // Change the current scope so that stuff in the block is added to the correct syntax table
     currentScope = newFuncDecExpr.get();
@@ -620,8 +645,9 @@ std::unique_ptr<FunctionDecExpr> Parser::ParseFunctionDec(){
     std::vector<std::unique_ptr<ParameterExpr>> params = ParseParams();
     std::vector<std::unique_ptr<Expr>> body = ParseBlock();
 
+    // The return type is saved in the symbol table so function calls can be type checked
     std::unique_ptr<SymbolEntry> newEntry =  std::make_unique<SymbolEntry>
-        (name, TokenType::Function, SymbolKind::Function, newFuncDecExpr.get());
+        (name, returnType, SymbolKind::Function, newFuncDecExpr.get());
 
     // Go back to previous scope after done parsing body and add function to syntax table
     currentScope = currentScope->ParentScope;
@@ -635,9 +661,25 @@ std::unique_ptr<FunctionDecExpr> Parser::ParseFunctionDec(){
 }
 
 // Follows grammer rule   <ReturnStatement> -> leave <Expression>
+// must match return type of the function
 std::unique_ptr<ReturnExpr> Parser::ParseReturn(){
     Advance();      // Move past leave
-    return std::make_unique<ReturnExpr>(ParseExpression());
+
+    FunctionDecExpr* function = dynamic_cast<FunctionDecExpr*>(currentScope);
+    if (!function)
+    {
+        throw std::runtime_error("leave can only be used inside a FUNCTION");
+    }
+
+    if (function->ReturnType == TokenType::Nothing)
+    {
+        throw std::runtime_error("Function " + function->Name + " has no return type so it can't leave anything");
+    }
+
+    std::unique_ptr<Expr> value = ParseExpression();
+    CheckType(function->ReturnType, value.get(), "leave in function " + function->Name);
+
+    return std::make_unique<ReturnExpr>(std::move(value));
 }
 
 // Turns a type token into its name for error messages
@@ -686,6 +728,13 @@ TokenType Parser::GetExprType(Expr* expr){
         return TokenType::Vboolean;
     }
 
+    // Return type is saved in the symbol table of the scope it was declared in
+    if (FunctionCallExpr* call = dynamic_cast<FunctionCallExpr*>(expr))
+    {
+        FunctionDecExpr* function = call->FuncDecExpr;
+        return function->ParentScope->LookUpLocal(function->Name)->Type;
+    }
+
     if (IdentifierExpr* identifier = dynamic_cast<IdentifierExpr*>(expr))
     {
         // Attribute like speed, look it up in the class
@@ -708,6 +757,33 @@ TokenType Parser::GetExprType(Expr* expr){
     return TokenType::Custom; // Function calls and list.at dont have a known type yet
 }
 
+// Throws an error if the value is not the right type
+void Parser::CheckType(TokenType wanted, Expr* value, std::string what){
+    TokenType given = GetExprType(value);
+
+    if (given == TokenType::Nothing)
+    {
+        throw std::runtime_error(what + " should be " + TypeName(wanted) + " but the function doesnt leave anything");
+    }
+
+    bool matches = 
+        given == wanted ||
+        given == TokenType::Custom ||
+        (wanted == TokenType::Vnum && given == TokenType::VDigit);
+
+    // A single digit number can be used as a VDigit
+    NumberExpr* number = dynamic_cast<NumberExpr*>(value);
+    if (wanted == TokenType::VDigit && number && number->Value.length() == 1)
+    {
+        matches = true;
+    }
+
+    if (!matches)
+    {
+        throw std::runtime_error(what + " should be " + TypeName(wanted) + " but got " + TypeName(given));
+    }
+}
+
 // Reads exactly as many arguments as were declared, with a '|' between each.
 // Each argument has to match the type of the parameter it lines up with.
 std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(std::vector<ParameterExpr*> expected, std::string name){
@@ -727,26 +803,8 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(std::vector<ParameterExpr*>
 
         std::unique_ptr<Expr> arg = ParseExpression();
 
-        // Compare the argument type with the parameter type
-        TokenType wanted = expected[i]->Type;
-        TokenType given = GetExprType(arg.get());
-
-        bool matches = 
-            given == wanted ||
-            given == TokenType::Custom ||
-            (wanted == TokenType::Vnum && given == TokenType::VDigit);
-
-        // A single digit number like 7 can be passed into a VDigit
-        NumberExpr* number = dynamic_cast<NumberExpr*>(arg.get());
-        if (wanted == TokenType::VDigit && number && number->Value.length() == 1)
-        {
-            matches = true;
-        }
-
-        if (!matches)
-        {
-            throw std::runtime_error(name + " argument '" + expected[i]->Name + "' should be " + TypeName(wanted) + " but got " + TypeName(given));
-        }
+        // The argument has to match the type of the parameter
+        CheckType(expected[i]->Type, arg.get(), name + " argument '" + expected[i]->Name + "'");
 
         args.push_back(std::move(arg));
     }

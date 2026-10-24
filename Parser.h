@@ -69,6 +69,7 @@ class Parser{
 
     std::vector<std::unique_ptr<Expr>> ParseArgs(std::vector<ParameterExpr*> expected, std::string name); // Reads a '|' separated argument list and checks each type
     TokenType GetExprType(Expr* expr);  // Works out what type an expression gives back
+    void CheckType(TokenType wanted, Expr* value, std::string what); // Throws an error if value isn't the wanted type
 
     Token Current();                // Returns the token at the position
     Token Advance();                // Returns the position token and increments the position
