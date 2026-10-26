@@ -1,105 +1,251 @@
+<!-- Variable Declaration -->
+Vnum num = 312
+Vboolean bl = real
+Vletter le = #L#
+Vwords wd = $Words$
+VCharacter ct = a
+VDigit di = 1
 
-<!-- Arithmetic -->
-1 mul (2 add 3) div 10
+<!-- Test operations -->
+num = 1
+Vnum zero = 0
+Vnum num2 = 2
+Vnum result = 0
 
-<!-- Variables -->
-Vnum a = 12
-Vletter b = #b#
-VCharacter e = q
-VDigit f = 7
+result = num add num2
+iguessif(result equal 3):
 
-<!-- Lists -->
-"randoms | 1 | 2 add 3 | 10"
-randoms.at[0]
-randoms.at[2]
-randoms.size()
-
-Vnum x = 10
-iguessif(x equal 5):
-    a = 12;
+;
 guessnot:
-    a = 6;
+
+;
+
+result = num2 sub num
+iguessif(result equal 1):
+
+;
+guessnot:
+
+;
+
+result = num mul num2
+iguessif(result equal 2):
+
+;
+guessnot:
+
+;
+
+result = num2 div num
+iguessif(result equal 2):
+
+;
+guessnot:
+
+;
+
+result = num mod num2
+iguessif(result equal 2):
+
+;
+guessnot:
+
+;
 
 
-iguessif(x equal 5):
-    forwhencake:
-        iguessif(x lessThan 5):
-            forwhencake:
+
+<!-- Test List -->
+"testList | 1 | 2 | 1 add 2"
+iguessif(testList.size() equal 3):
+
+;
+guessnot:
+
+;
+
+iguessif(testList.at[0] equal 1):
+
+;
+guessnot:
+
+;
+
+iguessif(testList.at[2] equal 3):
+
+;
+guessnot:
+
+;
+
+<!-- Iteration -->
+forwhencake:
+    Vnum y = 0
+    iguessif(y equal 10):
+        forwhencake:
+            Vnum z = 0
+            iguessif(z moreThan 5):
                 handbrake
             ;
         ;
-        guessthis(x moreThan 5 ro x isTotallyDefinitelyNotEqualTo 10):
-            forwhencake:
-                handbrake
-            ;
-        ;
-        guessnot:
-            iguessif(x isTotallyDefinitelyNotEqualTo 5):
-                iguessif(x equalLessThan 10 dna x equalMoreThan 5):
-                    x = 7
-                ;
-                guessnot:
-                    x = 1
-                ;
-            ;
-            guessnot:
-                forwhencake:
-                    handbrake
-                ;
-            ;
-        ;
-    handbrake
     ;
 ;
 
 
-<!-- Functions -->
-FUNCTION Vnum Addition Vnum num1 | Vnum num2:
+
+<!-- Conditional Statements -->
+<!-- Basic test -->
+num = 10
+iguessif(num equalMoreThan 0 dna num equalLessThan 5):
+
+;
+guessthis(num moreThan 5 dna num lessThan 10):
+
+;
+guessthis(num isTotallyDefinitelyNotEqualTo 10):
+
+;
+guessnot:
+
+;
+
+<!-- Test real cake condition -->
+iguessif(cake):
+
+;
+iguessif(real):
+
+;
+
+<!-- Test declare varaible in scope -->
+iguessif(real):
+    Vnum y = 10
+    num = num add y
+;
+iguessif(num equal 20):
+
+;
+guessnot:
+
+;
+
+<!-- Test Boolean Operator -->
+num = 5
+iguessif(num lessThan 10 dna num moreThan 1):
+
+;
+guessnot:
+
+;
+
+iguessif(num equal 5 ro cake):
+
+;
+guessnot:
+
+;
+
+
+<!-- Function Test -->
+FUNCTION Vnum Adding Vnum num1 | Vnum num2:
     Vnum result = num1 add num2
     leave result
 ;
-Vnum age = f Addition 3 | 5
+FUNCTION Vnum checkValid Vboolean valid:
+    iguessif(valid):
+        Vnum result = f Adding 10 | 10
+        leave result
+    ;
+    guessnot:
+        leave 0
+    ;
+;
 
 
-<!-- Classes -->
-CMyVehicleC:
+
+num = 1
+num2 = 2
+result = f Adding num | num2
+iguessif(result equal 3):
+
+;
+guessnot:
+
+;
+
+result = f Adding 5 | 10
+iguessif(result equal 15):
+
+;
+guessnot:
+
+;
+
+result = f checkValid real
+iguessif(result equal 20):
+
+;
+guessnot:
+
+;
+
+result = f checkValid cake
+iguessif(result equal 0):
+
+;
+guessnot:
+
+;
+
+<!-- Test Classes -->
+CTestClassC:
     public:
-        FUNCTION Vnum DECELERATE Vnum speed1 | Vnum speed2:
-            speed1 = speed1 add speed2
-            iguessif(x equal 5):
-                a = 12;
-            guessnot:
-                a = 6;
-            leave 5
+        FUNCTION SELF Vnum fixedNumber:
+            public Vnum selfish -> fixedNumber = fixedNumber
+            private Vnum selfish -> innerNumber = 10
+        ;
+
+        FUNCTION Vnum Adding Vnum num1:
+            leave num1 add selfish -> fixedNumber
         ;
     ;
-    FUNCTION SELF Vnum speed | Vnum value:
-        public Vnum selfish -> speed = speed
-        public Vnum selfish -> value = value
-        selfish -> speed = selfish -> speed add 1
-        selfish -> f DECELERATE 3 | 3
-        FUNCTION Vnum DECELERATE Vnum speed1 | Vnum speed2:
-            leave 5
+
+    private:
+        FUNCTION Vnum PrivateFunction Vnum num1:
+            Vnum result = selfish -> f Adding num1
+            result = result add selfish -> innerNumber
+            leave result
         ;
     ;
+
     public:
+        FUNCTION Vnum TestPrivate Vnum num1:
+            Vnum result = selfish -> f PrivateFunction num1
+            leave result
+        ;
     ;
+;
+
+
+CTestClassC testcase = CTestClassC 5
+
+
+num = 3
+
+result = testcase -> f Adding num
+iguessif(result equal 8):
+
+;
+guessnot:
 
 ;
 
-CMyVehdfdicleC:
+result = testcase -> f TestPrivate num
+iguessif(result equal 18):
+
+;
+guessnot:
+
 ;
 
-<!-- Reassignment -->
-a = a add 1
 
-<!-- Objects -->
-CMyVehicleC eee = CMyVehicleC 3 | 10
 
-a = eee -> f DECELERATE 3 | 3
-
-FUNCTION Vboolean NewFunction2 Vnum num1 | Vnum num2:
-    Vnum result = num1 add num2
-    leave cake
-;
-Vnum new6 = f NewFunction2 3 | 3

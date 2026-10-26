@@ -89,6 +89,7 @@ class Parser{
 
 
     // MARTIN CODE
+    FunctionDecExpr* CheckParentScope(ScopeExpr* parentscope);
     std::unique_ptr<IterationExpr> ParseIteration();
     std::unique_ptr<HandbrakeExpr> ParseBreak();
     std::unique_ptr<ConditionalStatementStructExpr> ParseConditionalStatementStructure();

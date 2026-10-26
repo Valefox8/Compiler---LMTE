@@ -103,11 +103,11 @@ Examples include:
 
 ###### Comparison Operators:
 Includes 6 expressions:
-    - Equalto (Equivalent to ==)
+    - Equal (Equivalent to ==)
     - Lessthan (Equivalent to <)
     - Morethan (Equivalent to >)
     - Istotallydefinitelynotequalto (Equivalent to !=)
-    - Equallessthan (Equivalent to <=>)
+    - Equallessthan (Equivalent to <=)
     - Equalmorethan (Equivalent to >=)
 
 Example of both of these:

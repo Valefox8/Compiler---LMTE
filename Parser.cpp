@@ -578,11 +578,16 @@ std::unique_ptr<ConditionalStatementExpr> Parser::ParseConditionalStatement(){
     if (type != TokenType::Guessnot) {
         condition = ParseBooleanOperator(); // generate condition
 
-        if (
-            !dynamic_cast<BinaryExpr*>(condition.get()) &&
-            !dynamic_cast<BooleanExpr*>(condition.get())
-        )
-            throw std::runtime_error("Invalid Condition, exprect structure <variable> <operator> <variable> or boolean value");
+        if (!dynamic_cast<BinaryExpr*>(condition.get()) && !dynamic_cast<BooleanExpr*>(condition.get())){
+            if(dynamic_cast<IdentifierExpr*>(condition.get())){
+                if(currentScope->LookUp(tokens[position-2].Value)->Type != TokenType::Vboolean){
+                    throw std::runtime_error("Invalid Condition, expect structure <variable> <operator> <variable> or boolean value");
+                }
+            }
+            else{
+                throw std::runtime_error("Invalid Condition, expect structure <variable> <operator> <variable> or boolean value");
+            }
+        }
     }
 
     //create new scope
@@ -660,14 +665,28 @@ std::unique_ptr<FunctionDecExpr> Parser::ParseFunctionDec(){
     return std::move(newFuncDecExpr);
 }
 
+// function for checking the scope is whether or not a FunctionDecExpr
+FunctionDecExpr* Parser::CheckParentScope(ScopeExpr* curr){
+    if (curr == nullptr){
+        return nullptr;
+    }
+    FunctionDecExpr* returnValue = dynamic_cast<FunctionDecExpr*>(curr);
+    
+    if(returnValue != nullptr){
+        return returnValue;
+    }
+
+    return CheckParentScope(curr->ParentScope);
+}
+
 // Follows grammer rule   <ReturnStatement> -> leave <Expression>
 // must match return type of the function
 std::unique_ptr<ReturnExpr> Parser::ParseReturn(){
     Advance();      // Move past leave
 
-    FunctionDecExpr* function = dynamic_cast<FunctionDecExpr*>(currentScope);
+    FunctionDecExpr* function = CheckParentScope(currentScope);
     if (!function)
-    {
+    {   
         throw std::runtime_error("leave can only be used inside a FUNCTION");
     }
 
