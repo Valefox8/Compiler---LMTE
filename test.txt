@@ -137,16 +137,263 @@ Vboolean d = cake
 Vnum new4 = f ADD 1 | 1
 
 <!-- Correct but not allowed -->
-<!-- Vboolean new5 = x moreThan 5 ro x isTotallyDefinitelyNotEqualTo 10  -->
+<!-- Vboolean new5 = x moreThan 5 ro x isTotallyDefinitelyNotEqualTo 10 -->
+
+Vboolean new5 = x
 
 
 
 
 
 
+<!-- Variable Declaration -->
+Vnum num = 312
+Vboolean bl = real
+Vletter le = #L#
+Vwords wd = $Words$
+VCharacter ct = a
+VDigit di = 1
+
+<!-- Test operations -->
+num = 1
+Vnum zero = 0
+Vnum num2 = 2
+Vnum result = 0
+
+result = num add num2
+iguessif(result equal 3):
+
+;
+guessnot:
+
+;
+
+result = num2 sub num
+iguessif(result equal 1):
+
+;
+guessnot:
+
+;
+
+result = num mul num2
+iguessif(result equal 2):
+
+;
+guessnot:
+
+;
+
+result = num2 div num
+iguessif(result equal 2):
+
+;
+guessnot:
+
+;
+
+result = num mod num2
+iguessif(result equal 2):
+
+;
+guessnot:
+
+;
 
 
 
+<!-- Test List -->
+"testList | 1 | 2 | 1 add 2"
+iguessif(testList.size() equal 3):
+
+;
+guessnot:
+
+;
+
+iguessif(testList.at[0] equal 1):
+
+;
+guessnot:
+
+;
+
+iguessif(testList.at[2] equal 3):
+
+;
+guessnot:
+
+;
+
+<!-- Iteration -->
+forwhencake:
+    Vnum y = 0
+    iguessif(y equal 10):
+        forwhencake:
+            Vnum z = 0
+            iguessif(z moreThan 5):
+                handbrake
+            ;
+        ;
+    ;
+;
+
+
+
+<!-- Conditional Statements -->
+<!-- Basic test -->
+num = 10
+iguessif(num equalMoreThan 0 dna num equalLessThan 5):
+
+;
+guessthis(num moreThan 5 dna num lessThan 10):
+
+;
+guessthis(num isTotallyDefinitelyNotEqualTo 10):
+
+;
+guessnot:
+
+;
+
+<!-- Test real cake condition -->
+iguessif(cake):
+
+;
+iguessif(real):
+
+;
+
+<!-- Test declare varaible in scope -->
+iguessif(real):
+    Vnum y = 10
+    num = num add y
+;
+iguessif(num equal 20):
+
+;
+guessnot:
+
+;
+
+<!-- Test Boolean Operator -->
+num = 5
+iguessif(num lessThan 10 dna num moreThan 1):
+
+;
+guessnot:
+
+;
+
+iguessif(num equal 5 ro cake):
+
+;
+guessnot:
+
+;
+
+
+<!-- Function Test -->
+FUNCTION Vnum Adding Vnum num1 | Vnum num2:
+    Vnum result = num1 add num2
+    leave result
+;
+FUNCTION Vnum checkValid Vboolean valid:
+    iguessif(valid):
+        Vnum result = f Adding 10 | 10
+        leave result
+    ;
+    guessnot:
+        leave 0
+    ;
+;
+
+
+
+num = 1
+num2 = 2
+result = f Adding num | num2
+iguessif(result equal 3):
+
+;
+guessnot:
+
+;
+
+result = f Adding 5 | 10
+iguessif(result equal 15):
+
+;
+guessnot:
+
+;
+
+result = f checkValid real
+iguessif(result equal 20):
+
+;
+guessnot:
+
+;
+
+result = f checkValid cake
+iguessif(result equal 0):
+
+;
+guessnot:
+
+;
+
+<!-- Test Classes -->
+CTestClassC:
+    public:
+        FUNCTION SELF Vnum fixedNumber:
+            public Vnum selfish -> fixedNumber = fixedNumber
+            private Vnum selfish -> innerNumber = 10
+        ;
+
+        FUNCTION Vnum Adding Vnum num1:
+            leave num1 add selfish -> fixedNumber
+        ;
+    ;
+
+    private:
+        FUNCTION Vnum PrivateFunction Vnum num1:
+            Vnum result = selfish -> f Adding num1
+            result = result add selfish -> innerNumber
+            leave result
+        ;
+    ;
+
+    public:
+        FUNCTION Vnum TestPrivate Vnum num1:
+            Vnum result = selfish -> f PrivateFunction num1
+            leave result
+        ;
+    ;
+;
+
+
+CTestClassC testcase = CTestClassC 5
+
+
+num = 3
+
+result = testcase -> f Adding num
+iguessif(result equal 8):
+
+;
+guessnot:
+
+;
+
+result = testcase -> f TestPrivate num
+iguessif(result equal 18):
+
+;
+guessnot:
+
+;
 
 
 
