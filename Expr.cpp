@@ -42,13 +42,23 @@ SymbolEntry* ScopeExpr::LookUp(const std::string& varName)
 
 // Return an entry to the symbol table from current scope
 // Is also a way to check if a symbol was added or not 
-SymbolEntry* ScopeExpr::LookUpLocal(const std::string& varName)
+SymbolEntry* ClassDecExpr::LookUpLocal(const std::string& varName)
 {
     if (Table.count(varName) == 1)
     {
         return Table[varName].get();
     }
-    throw std::runtime_error("Cant find in local scope: " + varName);      
+
+    if (ClassicClass != nullptr)
+    {
+        SymbolEntry* returnSymbol = LookUpLocal(varName);
+        if (returnSymbol->Access == TokenType::Private)
+        {
+            throw std::runtime_error("Attribute: " + varName + " is a private attribute and cant be accessed by children classes");
+        }
+    }
+
+    throw std::runtime_error("Cant find in local scope: " + this->Name + " value: "+ varName);      
 }
 
 // Insert into current symbol table, will ignore if variable is declared in higher up scopes
@@ -65,6 +75,7 @@ void ScopeExpr::Insert(const std::string& varName, std::unique_ptr<SymbolEntry> 
         throw std::runtime_error("This entry expression is null: " + varName);
     }
 
+    std::cout << "Insert " + varName + " into " + this->Name << std::endl;
     Table[varName] = std::move(entry);
 }
 
@@ -78,18 +89,18 @@ bool ScopeExpr::Update(const std::string& varName, std::unique_ptr<SymbolEntry> 
 // Needed for variable dec and method call in the scope of a class dec
 // Return type: null if cant find a class dec
 // Pointer to Class dec expr if can find one
-ClassDecExpr *ScopeExpr::GetParentClass(){
-    
+ClassDecExpr* ScopeExpr::GetParentClass(){
+
     if (ParentScope == nullptr){
+
         return nullptr;
     }
-    
-    ClassDecExpr* parentClassDecExpr = nullptr;
+
+    ClassDecExpr* parentClassDecExpr;
 
     if (parentClassDecExpr = dynamic_cast<ClassDecExpr*>(ParentScope)) {
         return parentClassDecExpr;
     }
-
 
     return ParentScope->GetParentClass();
 }
@@ -108,6 +119,7 @@ std::string ScopeExpr::GetNames(){
 // Returning a vector of poiters to each parameter declaration expression stored inside a function expression
 std::vector<ParameterExpr*> ScopeExpr::GetFunctionPara(std::string funcName)
 {
+    
     std::vector<ParameterExpr*> allPara;
     if (
         funcName == "SELF" && 
@@ -118,18 +130,25 @@ std::vector<ParameterExpr*> ScopeExpr::GetFunctionPara(std::string funcName)
     
     // Check if the scope contains the function
     SymbolEntry* symbol = LookUp(funcName);
-    if (symbol->SymK != SymbolKind::Function)
+    if (symbol->SymK != SymbolKind::Method && symbol->SymK != SymbolKind::Function)
     {
         throw std::runtime_error("Cant function and return parameter: " + funcName);
     }
 
     // Iterating through each Prameter Expression stored inside a function expression
-    FunctionDecExpr* methodExpr = dynamic_cast<FunctionDecExpr*>(LookUp(funcName)->Expression);
+    FunctionDecExpr* methodExpr = dynamic_cast<FunctionDecExpr*>(symbol->Expression);
+
+    if (!methodExpr)
+    {
+        throw std::runtime_error("Cant function and return parameter: " + funcName);
+    }
+
     size_t length = methodExpr->Param.size();
     for (size_t i = 0; i < length; i++)
     {
         allPara.push_back(methodExpr->Param[i].get());
     }
+
     return allPara;
 };
 

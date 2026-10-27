@@ -80,11 +80,6 @@ std::string CodeGen::GenCode(Expr* expr){
         std::string result;
         
         // See if its 'selfish ->' or an 'object->' calling  
-        if (identifier->Callee)
-        {
-            IdentifierExpr* callee = dynamic_cast<IdentifierExpr*>(identifier->Callee.get());
-            result += callee->Name + ".";
-        }
         result += identifier->Name;
         return result;
     }
@@ -139,27 +134,18 @@ std::string CodeGen::GenCode(Expr* expr){
     if (VarDecExpr* decl = dynamic_cast<VarDecExpr*>(expr))
     {
         std::string result;
-
-        //  
-        if (decl->IsAttribute)
-        {
-            result += "selfish.";
-        }
-
-        switch (decl->Access)
-        {
-            case TokenType::Protected:
-                result += "_";
-                break;
-            case TokenType::Private:
-                result += "__";
-                break;
-        }
-        result += decl->Name + "=";
+        result += GenCode(decl->Name.get());
+        result += "=";
         result += GenCode(decl->Value.get());
 
         return result;  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
+
+    // if (VarDecExpr* decl = dynamic_cast<VarDecExpr*>(expr))
+    // {
+    //     return "success";
+    // }
+
 
     if(dynamic_cast<HandbrakeExpr*>(expr)){
         return "break";
@@ -199,7 +185,12 @@ std::string CodeGen::GenCode(Expr* expr){
             for (size_t i = 0; i < conditionStatement->Body.size(); i++)
             {
                 result += "\n" + Indent(GenCode(conditionStatement->Body[i].get()));                
-            }                
+            }
+
+            if (conditionStatement->Body.size() == 0)
+            {
+                result += "\n    pass";
+            }
 
         }
         return result;
@@ -247,9 +238,8 @@ std::string CodeGen::GenCode(Expr* expr){
     // Funciton/Method Declaration
     if (FunctionDecExpr* function = dynamic_cast<FunctionDecExpr*>(expr))
     {
-
         std::string result = "def ";
-
+        
         switch (function->Access)
         {
             case TokenType::Protected:
@@ -259,6 +249,8 @@ std::string CodeGen::GenCode(Expr* expr){
                 result += "__";
                 break;
         }
+
+
         // Check if its a constructor
         result += (function->Name == "SELF") ? "__init__ (" :  function->Name + " (";
 
@@ -267,9 +259,12 @@ std::string CodeGen::GenCode(Expr* expr){
         {
             result += "selfish, ";
         }
+
+
         auto& para = function->Param;
         for (size_t i = 0; i < para.size(); ++i) 
         {
+            
             result += para[i]->Name;
             if (i < para.size() - 1) 
             { 
@@ -303,12 +298,6 @@ std::string CodeGen::GenCode(Expr* expr){
     {
         std::string result;
 
-        // Check for 'selfish ->' or 'object ->'
-        if (call->Callee)
-        {
-            IdentifierExpr* callee = dynamic_cast<IdentifierExpr*>(call->Callee.get());
-            result += callee->Name + ".";
-        }
         
         // Generating parameters 
         result += call->FuncDecExpr->Name + "(";
@@ -318,10 +307,8 @@ std::string CodeGen::GenCode(Expr* expr){
             {
                 result += ", ";
             }
-
             result += GenCode(call->Args[i].get());
         }
-
         result += ")";
         return result;
     }
@@ -330,7 +317,13 @@ std::string CodeGen::GenCode(Expr* expr){
     // Class declaration
     if (ClassDecExpr* classDec = dynamic_cast<ClassDecExpr*>(expr))
     {
-        std::string result = "class " + classDec->Name + ":";
+        std::string result = "class " + classDec->Name;
+
+        if (classDec->ClassicClass) {
+            result += "(" + (classDec->ClassicClass->Name) + ")";
+        }
+
+        result += ":";
 
         // Generating each method (plz keep in mind the body only stores methods)
         for (size_t i = 0; i < classDec->Body.size(); i++)
@@ -351,9 +344,13 @@ std::string CodeGen::GenCode(Expr* expr){
     // Reassignment
     if (AssignExpr* assign = dynamic_cast<AssignExpr*>(expr))
     {
-        std::string target = GenCode(dynamic_cast<IdentifierExpr*>(assign->Target.get()));
+        std::string result;
+        result += GenCode(assign->Target.get());
 
-        return target + " = " + GenCode(assign->Value.get());
+        result += "=";
+
+        result += GenCode(assign->Value.get());
+        return result;
     }
 
     // Generating objects
@@ -373,6 +370,30 @@ std::string CodeGen::GenCode(Expr* expr){
 
         result += ")";
         return result;
+    }
+
+
+    if (AttReferenceExpr* attRef = dynamic_cast<AttReferenceExpr*>(expr))
+    {
+        std::string result;
+
+        result += GenCode(attRef->Primary.get());
+        result += ".";
+        
+        switch (attRef->Access)
+        {
+            case TokenType::Protected:
+                result += "_";
+                break;
+            case TokenType::Private:
+                result += "__";
+                break;
+        }
+
+
+        result += GenCode(attRef->Attribute.get());
+
+        return result;  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
 
 
