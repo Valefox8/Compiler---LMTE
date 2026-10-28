@@ -558,7 +558,7 @@ std::unique_ptr<ConditionalStatementExpr> Parser::ParseConditionalStatement(){
 }
 
 std::unique_ptr<ConditionalStatementStructExpr> Parser::ParseConditionalStatementStructure() {
-    std::vector<std::unique_ptr<ConditionalStatementExpr>> aConditionStatement;
+    std::vector<std::unique_ptr<Expr>> aConditionStatement;
 
     if (Current().Type == TokenType::IguessIf)
         aConditionStatement.push_back(ParseConditionalStatement());

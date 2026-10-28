@@ -262,13 +262,11 @@ class ConditionalStatementExpr : public ScopeExpr{
 };
 
 
-class ConditionalStatementStructExpr : public Expr{
+class ConditionalStatementStructExpr : public ScopeExpr{
     public: 
-        std::vector<std::unique_ptr<ConditionalStatementExpr>> ConditionalStatements;
-
         // use Expr because already restrict input expr to if else statements in ParseStatement()
-        ConditionalStatementStructExpr(std::vector<std::unique_ptr<ConditionalStatementExpr>> conditionalStatements){
-            ConditionalStatements = std::move(conditionalStatements);
+        ConditionalStatementStructExpr(std::vector<std::unique_ptr<Expr>> conditionalStatements){
+            Body = std::move(conditionalStatements);
         }
 };
 

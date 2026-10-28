@@ -26,17 +26,18 @@ void Optimiser::Sweep(ScopeExpr& currentScope)
     for (std::unique_ptr<Expr>& expr : currentScope.Body)
     {
         Expr* raw = expr.get();
+        ScopeExpr* innerScope = dynamic_cast<ScopeExpr*>(expr.get());
 
-        if (dynamic_cast<FunctionDecExpr*>(raw) || dynamic_cast<ClassDecExpr*>(raw))
+        if (dynamic_cast<FunctionDecExpr*>(innerScope) || dynamic_cast<ClassDecExpr*>(innerScope))
         {
-            if (!reachable.count(raw))
+            if (!reachable.count(innerScope))
                 continue;
         }
 
-        ScopeExpr* innerScope = dynamic_cast<ScopeExpr*>(raw);
         if (innerScope)
+        {
             Sweep(*innerScope);
-
+        }
         retained.push_back(std::move(expr));
     }
 

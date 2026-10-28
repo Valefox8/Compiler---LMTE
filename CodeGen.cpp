@@ -165,8 +165,12 @@ std::string CodeGen::GenCode(Expr* expr){
     {    
         std::string result;
 
-        for(const auto& structIfElseStatements : conditionalStatementStruct->ConditionalStatements){
-            auto* conditionStatement = structIfElseStatements.get();
+        for(const auto& structIfElseStatements : conditionalStatementStruct->Body){
+            ConditionalStatementExpr* conditionStatement = dynamic_cast<ConditionalStatementExpr*>(structIfElseStatements.get());
+            if (!conditionStatement)
+            {
+                throw std::runtime_error("How can a ConditionalStatementStructExpr have expression other than ConditionalStatementExpr?");
+            }
             TokenType type = conditionStatement->Type;
             std::string conditions;
 
