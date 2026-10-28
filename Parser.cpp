@@ -129,14 +129,14 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
                 Advance();  // ']'
                 return std::make_unique<ListAtExpr>(name, std::move(index));
             }
-            throw std::runtime_error("how did we get here: "); // TODO: maybe implement print with this?
+            throw std::runtime_error("how did we get here: at line " + std::to_string(next_token.LineUsed)); // TODO: maybe implement print with this?
         }
                 
         // If its not an arrow or a dot function then its just a normal variable/parameter
         // Check if its declared
         Expr* identifier = currentScope->LookUp(name)->Expression;
         if (!dynamic_cast<VarDecExpr*>(identifier) && !dynamic_cast<ParameterExpr*>(identifier))
-            throw std::runtime_error("Undeclared Variable: " + name);
+            throw std::runtime_error("Undeclared Variable: at line " + std::to_string(next_token.LineUsed) + name );
 
         return std::make_unique<IdentifierExpr>(name); // A variable name
     }
@@ -150,7 +150,7 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
     }
 
     currentScope->PrintSymbolTable();
-    throw std::runtime_error("Syntax error: unexpected token " + Current().Value);
+    throw std::runtime_error("Syntax error: unexpected token at line " + std::to_string(Current().LineUsed) + Current().Value);
 }
 
 // CODE ADDED FROM MARTIN
@@ -226,7 +226,7 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
             return ParseBreak();
         }
         else{
-            throw std::runtime_error("Invalid Syntax: Handbrake");
+            throw std::runtime_error("Invalid Syntax: Handbrake at line " + std::to_string(Current().LineUsed));
         }
     }
 
@@ -275,7 +275,7 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
         if (!dynamic_cast<IdentifierExpr*>(expr.get()) &&
             !dynamic_cast<AttReferenceExpr*>(expr.get()))
         {
-            throw std::runtime_error("You cannot assign to that");
+            throw std::runtime_error("You cannot assign to that at line " + std::to_string(Current().LineUsed));
         }
         Advance(); // Move past the '='
 
@@ -333,7 +333,7 @@ std::unique_ptr<Expr> Parser::ParseGetValue(TokenType type){
         Token lit = Advance();          // Gets the literal and moves position
 
         if(lit.Value.length() != 1){
-            throw std::runtime_error("Should be length 1");  // As per the production rules
+            throw std::runtime_error("Should be length 1 at line " + std::to_string(Current().LineUsed));  // As per the production rules
         }
         return std::make_unique<CharacterExpr>(lit.Value);
     }
@@ -343,7 +343,7 @@ std::unique_ptr<Expr> Parser::ParseGetValue(TokenType type){
         
         if(lit.Type != TokenType::Number || lit.Value.length() != 1)        // Digit must be a number of length 1 as per the production rules
         {
-            throw std::runtime_error("Should be length 1 and a number gangalang");
+            throw std::runtime_error("Should be length 1 and a number gangalang at line " + std::to_string(Current().LineUsed));
         }
         return std::make_unique<DigitExpr>(lit.Value);
     }
@@ -352,7 +352,7 @@ std::unique_ptr<Expr> Parser::ParseGetValue(TokenType type){
         return ParseExpression();      // Vnum can be a whole expression or just a value which is covered in parse expression
     } 
 
-    throw std::runtime_error("Thats not a type lil bro lock in");   // Throws an error if its not a valid type
+    throw std::runtime_error("Thats not a type lil bro lock in at line " + std::to_string(Current().LineUsed));   // Throws an error if its not a valid type
     
 }
 
@@ -431,12 +431,7 @@ std::unique_ptr<ListExpr> Parser::ParseList(){
     std::unique_ptr<ListExpr> newListDecExpr = std::make_unique<ListExpr>(name, std::move(elements));
 
     std::unique_ptr<SymbolEntry> newEntry = std::make_unique<SymbolEntry>
-    (
-        name,
-        TokenType::List,
-        SymbolKind::Variable,
-        newListDecExpr.get()
-    );
+        (name, TokenType::List, SymbolKind::Variable, newListDecExpr.get(), TokenType::Public, nameToken.LineUsed);
     currentScope->Insert(name, std::move(newEntry));
 
     return newListDecExpr;       // returns the expression created
@@ -455,12 +450,13 @@ std::vector<std::unique_ptr<ParameterExpr>> Parser::ParseParams(){
         }
 
         TokenType paramType = Advance().Type;       // parameter type
-        std::string paramName = Advance().Value;    // parameter name
+        Token param = Advance();    // parameter name
+        std::string paramName = param.Value;
 
         std::unique_ptr<ParameterExpr> newParaExpr = std::make_unique<ParameterExpr>(paramName, paramType);
 
         std::unique_ptr<SymbolEntry> newEntry =  std::make_unique<SymbolEntry>
-            (paramName, paramType, SymbolKind::Parameter, newParaExpr.get());
+            (paramName, paramType, SymbolKind::Parameter, newParaExpr.get(), TokenType::Public, param.LineUsed);
         currentScope->Insert(paramName, std::move(newEntry));
 
         params.push_back(std::move(newParaExpr));
@@ -538,11 +534,11 @@ std::unique_ptr<ConditionalStatementExpr> Parser::ParseConditionalStatement(){
         if (!dynamic_cast<BinaryExpr*>(condition.get()) && !dynamic_cast<BooleanExpr*>(condition.get())){
             if(dynamic_cast<IdentifierExpr*>(condition.get())){
                 if(currentScope->LookUp(tokens[position-2].Value)->Type != TokenType::Vboolean){
-                    throw std::runtime_error("Invalid Condition, expect structure <variable> <operator> <variable> or boolean value");
+                    throw std::runtime_error("Invalid Condition, expect structure <variable> <operator> <variable> or boolean value at line " + std::to_string(Current().LineUsed));
                 }
             }
             else{
-                throw std::runtime_error("Invalid Condition, expect structure <variable> <operator> <variable> or boolean value");
+                throw std::runtime_error("Invalid Condition, expect structure <variable> <operator> <variable> or boolean value at line " + std::to_string(Current().LineUsed));
             }
         }
     }
@@ -594,7 +590,8 @@ std::unique_ptr<FunctionDecExpr> Parser::ParseFunctionDec(SymbolKind symK, Token
         returnType = Advance().Type;
     }
 
-    std::string name = Advance().Value; // Get the function name
+    Token function = Advance(); // Get the function name
+    std::string name = function.Value;
     bool isMethod = (symK == SymbolKind::Method) ? true : false;
     
     std::unique_ptr<FunctionDecExpr> newFuncDecExpr = std::make_unique<FunctionDecExpr>(name, isMethod, currentScope, access);
@@ -608,7 +605,7 @@ std::unique_ptr<FunctionDecExpr> Parser::ParseFunctionDec(SymbolKind symK, Token
     std::vector<std::unique_ptr<Expr>> body = ParseBlock();
 
     std::unique_ptr<SymbolEntry> newEntry =  std::make_unique<SymbolEntry>
-        (name, returnType, symK, newFuncDecExpr.get(), access);
+        (name, returnType, symK, newFuncDecExpr.get(), access, function.LineUsed);
 
     // Go back to previous scope after done parsing body and add function to syntax table
     currentScope = currentScope->ParentScope;
@@ -643,12 +640,12 @@ std::unique_ptr<ReturnExpr> Parser::ParseReturn(){
     FunctionDecExpr* function = CheckParentScope(currentScope);
     if (!function)
     {   
-        throw std::runtime_error("leave can only be used inside a FUNCTION");
+        throw std::runtime_error("leave can only be used inside a FUNCTION at line " + std::to_string(Current().LineUsed));
     }
 
     if (function->ReturnType == TokenType::Nothing)
     {
-        throw std::runtime_error("Function " + function->Name + " has no return type so it can't leave anything");
+        throw std::runtime_error("Function " + function->Name + " has no return type so it can't leave anything; at line " + std::to_string(Current().LineUsed));
     }
 
     std::unique_ptr<Expr> value = ParseExpression();
@@ -730,7 +727,7 @@ void Parser::CheckType(TokenType wanted, Expr* value, std::string what){
 
     if (given == TokenType::Nothing)
     {
-        throw std::runtime_error(what + " should be " + TypeName(wanted) + " but the function doesnt leave anything");
+        throw std::runtime_error(what + " should be " + TypeName(wanted) + " but the function doesnt leave anything at line " + std::to_string(Current().LineUsed));
     }
 
     bool matches = 
@@ -747,7 +744,7 @@ void Parser::CheckType(TokenType wanted, Expr* value, std::string what){
 
     if (!matches)
     {
-        throw std::runtime_error(what + " should be " + TypeName(wanted) + " but got " + TypeName(given));
+        throw std::runtime_error(what + " should be " + TypeName(wanted) + " but got " + TypeName(given) + " at line " + std::to_string(Current().LineUsed));
     }
 }
 
@@ -763,7 +760,7 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(std::vector<ParameterExpr*>
         {
             if (Current().Type != TokenType::Separator)
             {
-                throw std::runtime_error(name + " did not get enough arguments");
+                throw std::runtime_error(name + " did not get enough arguments at line " + std::to_string(Current().LineUsed));
             }
 
             Advance(); // Move past the '|'
@@ -796,12 +793,15 @@ std::unique_ptr<FunctionCallExpr> Parser::ParseFunctionCall(ClassDecExpr* primar
     // Check current scope symbol table to see if function exists, and to returns the correct expression
     SymbolEntry* funcSymbol = activeScope->LookUp(funcName);
     if (funcSymbol->SymK != SymbolKind::Function && funcSymbol->SymK != SymbolKind::Method) 
-        throw std::runtime_error("Cannot find function/method " + funcName);
+        throw std::runtime_error("Cannot find function/method " + funcName + " at line " + std::to_string(Current().LineUsed));
     
     FunctionDecExpr* funcDecExpr = dynamic_cast<FunctionDecExpr*>(funcSymbol->Expression);
     if (!funcDecExpr) {
-        throw std::runtime_error("Symbol talbe store wrong expr for function: " + funcName);
+        throw std::runtime_error("Symbol talbe store wrong expr for function: " + funcName + " at line " + std::to_string(Current().LineUsed));
     }   
+
+    // A function is used, so it may not be removed when generating code
+    currentScope->GetMainScope()->CalledExprDec.insert(funcDecExpr);
 
     std::vector<ParameterExpr*> expected = activeScope->GetFunctionPara(funcName);
 
@@ -821,7 +821,7 @@ std::unique_ptr<AttReferenceExpr> Parser::ParseAttributeReference()
     // Only objects are allowed to use ->
     SymbolEntry* primarySymbol = currentScope->LookUp(token.Value);
     if (primarySymbol->SymK != SymbolKind::Object) {
-        throw std::runtime_error("Variable does not have an arrow expression: " + token.Value);
+        throw std::runtime_error("Variable does not have an arrow expression: " + token.Value + " at line " + std::to_string(Current().LineUsed));
     }
 
 
@@ -842,9 +842,9 @@ std::unique_ptr<AttReferenceExpr> Parser::ParseAttributeReference()
 
         // Check if its a public method when called outside a class dec
         if (!currentScope->GetParentClass() && methodSymbol->Access != TokenType::Public) 
-            throw std::runtime_error(primarySymbol->Name + " has method: " + methodSymbol->Name + " but cant be called outside class dec");
+            throw std::runtime_error(primarySymbol->Name + " has method: " + methodSymbol->Name + " but cant be called outside class dec" + " at line " + std::to_string(Current().LineUsed));
         if (methodSymbol->SymK != SymbolKind::Method)
-            throw std::runtime_error(primarySymbol->Name + " has no method: " + methodSymbol->Name);
+            throw std::runtime_error(primarySymbol->Name + " has no method: " + methodSymbol->Name + " at line " + std::to_string(Current().LineUsed));
 
         // Just normal function call expr
         std::unique_ptr<FunctionCallExpr> methodCallExpr = ParseFunctionCall(primaryClassDecExpr);
@@ -857,14 +857,14 @@ std::unique_ptr<AttReferenceExpr> Parser::ParseAttributeReference()
     {
         // Check if its a public method when called outside a class dec
         if (!currentScope->GetParentClass() && identifierSymbol->Access != TokenType::Public) 
-            throw std::runtime_error(primarySymbol->Name + "has attribute: " + identifierSymbol->Name + " but cant be called outside class dec");
+            throw std::runtime_error(primarySymbol->Name + "has attribute: " + identifierSymbol->Name + " but cant be called outside class dec" + " at line " + std::to_string(Current().LineUsed));
 
         // Just a normal id expr
         std::unique_ptr<IdentifierExpr> attributeName = std::make_unique<IdentifierExpr>(identifierSymbol->Name);
         return std::make_unique<AttReferenceExpr>(std::move(primaryName), std::move(attributeName), identifierSymbol->Type, identifierSymbol->Access);
     }
     
-    throw std::runtime_error(primarySymbol->Name + " object does not have attribute/function: " + identifierSymbol->Name);
+    throw std::runtime_error(primarySymbol->Name + " object does not have attribute/function: " + identifierSymbol->Name + " at line " + std::to_string(Current().LineUsed));
 }
 
 // Basically the same as normal attribute, just change the IsAttrute and access field.
@@ -877,11 +877,11 @@ std::unique_ptr<VarDecExpr> Parser::ParseAttributeDec(){ // Parses 'public Vnum 
 
     // Check if this attribute is declared inside a class. Only objects are allowed to use ->
     if (!currentScope->GetParentClass()) {
-        throw std::runtime_error("Cant find parent class to declare: " + varName);
+        throw std::runtime_error("Cant find parent class to declare: " + varName + " at line " + std::to_string(Current().LineUsed));
     }
     SymbolEntry* primarySymbol = currentScope->LookUp(objToken.Value);
     if (primarySymbol->SymK != SymbolKind::Object) {
-        throw std::runtime_error("Variable does not have an arrow expression: " + objToken.Value);
+        throw std::runtime_error("Variable does not have an arrow expression: " + objToken.Value + " at line " + std::to_string(Current().LineUsed));
     }
 
     std::unique_ptr<IdentifierExpr> primaryNameExpr = std::make_unique<IdentifierExpr>(objToken.Value);
@@ -897,7 +897,8 @@ std::unique_ptr<VarDecExpr> Parser::ParseAttributeDec(){ // Parses 'public Vnum 
 // Follows grammer rule   <Methods> -> <FunctionDeclaration> | <FunctionDeclaration> <Methods>
 std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(ClassDecExpr* parentClass){ // Parses class declarations
 
-    std::string className = Advance().Value;    // Get the class name
+    Token classDec = Advance();
+    std::string className = classDec.Value;    // Get the class name
     
     if (parentClass) {Advance();Advance();Advance();}
     
@@ -911,7 +912,7 @@ std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(ClassDecExpr* parentClass){ 
     while (Current().Type != TokenType::Semicolon) {  // Read access sections until the class closes
         TokenType currentType = Current().Type;
         if (currentType == TokenType::EndOfFile) {
-            throw std::runtime_error("Non closed scope: class " + className + " is missing ';'");
+            throw std::runtime_error("Non closed scope: class " + className + " is missing ';'" + " at line " + std::to_string(Current().LineUsed));
         }
 
         // Parsing the constructor.
@@ -948,7 +949,7 @@ std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(ClassDecExpr* parentClass){ 
 
     // Add the new class to the symbol table
     std::unique_ptr<SymbolEntry> newEntry =  std::make_unique<SymbolEntry>
-        (className, TokenType::Custom, SymbolKind::Class, newClassDecExpr.get());
+        (className, TokenType::Custom, SymbolKind::Class, newClassDecExpr.get(), TokenType::Public, classDec.LineUsed);
 
     currentScope = currentScope->ParentScope;
 
@@ -974,12 +975,14 @@ std::unique_ptr<ClassDecExpr> Parser::ParseInheritance()
 std::unique_ptr<ObjectDecExpr> Parser::ParseObjectDec()// Parses 'CName obj = CName args'
 {
     std::string className = Advance().Value; // The class name on the left
-    std::string objName = Advance().Value; // obejct name
+    Token obj = Advance(); // obejct name
+    std::string objName = obj.Value; // obejct name
+    int objLineUsed = obj.LineUsed;
 
     // Class was not declared
     SymbolEntry* classSymbol = currentScope->LookUp(className);
     if (classSymbol->SymK != SymbolKind::Class) {
-        throw std::runtime_error("Cannot Recognize Class: " + className);
+        throw std::runtime_error("Cannot Recognize Class: " + className + " at line " + std::to_string(objLineUsed));
     }
         
     ClassDecExpr* classExpr = dynamic_cast<ClassDecExpr*>(classSymbol->Expression);
@@ -990,12 +993,19 @@ std::unique_ptr<ObjectDecExpr> Parser::ParseObjectDec()// Parses 'CName obj = CN
 
     Token secondToken = Advance();
     if (secondToken.Value != className) {
-        throw std::runtime_error("Object " + objName + " was declared as " + className + " but built as " + secondToken.Value);
+        throw std::runtime_error("Object " + objName + " was declared as " + className + " but built as " + secondToken.Value + " at line " + std::to_string(objLineUsed));
     }
 
     // How many arguments the constructor takes
     std::vector<ParameterExpr*> expected = classExpr->GetFunctionPara(); 
     std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, "Class " + className);
+
+    // A class is used, so it may not be removed when generating code
+    currentScope->GetMainScope()->CalledExprDec.insert(classExpr);
+    if (classExpr->Contain("SELF"))
+    {
+        currentScope->GetMainScope()->CalledExprDec.insert(classExpr->LookUp("SELF")->Expression);
+    }
 
     // Get the class expression and create new object expression
     std::unique_ptr<ObjectDecExpr> newObjDecExpr = 
@@ -1003,7 +1013,7 @@ std::unique_ptr<ObjectDecExpr> Parser::ParseObjectDec()// Parses 'CName obj = CN
 
     // Adding to the symbol table
     std::unique_ptr<SymbolEntry> newEntry = std::make_unique<SymbolEntry>
-        (objName, TokenType::Custom, SymbolKind::Object, newObjDecExpr.get());
+        (objName, TokenType::Custom, SymbolKind::Object, newObjDecExpr.get(), TokenType::Public, objLineUsed);
 
     currentScope->Insert(objName, move(newEntry));
 

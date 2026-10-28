@@ -35,6 +35,7 @@ class Lexer{
     private:
         std::string source; // Input
         int position;       // current character
+        int line;
 
         Token ReadNumber();     // Pretty self expanitory 
         Token ReadIdOrKey();    // Pretty self expanitory 

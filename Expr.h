@@ -38,6 +38,7 @@
 #include <iostream>
 #include "TokenType.h"
 #include <utility>
+#include <unordered_set>
 #include"SymbolEntry.h"
 using namespace std;
 
@@ -62,6 +63,7 @@ class ScopeExpr : public Expr {
         std::map<std::string, std::unique_ptr<SymbolEntry>> Table;
         ScopeExpr* ParentScope;
         std::string Name;
+        std::unordered_set<Expr*> CalledExprDec;
 
         ScopeExpr (std::string name = "", ScopeExpr* parentScope = nullptr)
         :   ParentScope(parentScope),
@@ -75,9 +77,11 @@ class ScopeExpr : public Expr {
         void Insert(const std::string& varName, std::unique_ptr<SymbolEntry> entry);
         bool Update(const std::string& varName, std::unique_ptr<SymbolEntry> entry);
         ClassDecExpr* GetParentClass();
+        ScopeExpr* GetMainScope();
         std::string GetNames();
         void PrintSymbolTable() const;
         std::vector<ParameterExpr*> GetFunctionPara(std::string funcName = "SELF");
+        void DeleteSymbol (const std::string& varName);
 
 };
 

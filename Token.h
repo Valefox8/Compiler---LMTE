@@ -27,11 +27,13 @@ struct Token
 {
     TokenType Type;
     std::string Value;
+    int LineUsed;
 
-    Token(TokenType type, std::string value)
+    Token(TokenType type, std::string value, int lineUsed = 0)
     {
         Type = type;
         Value = value;
+        LineUsed = lineUsed;
     }
 };
 

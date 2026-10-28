@@ -105,6 +105,23 @@ ClassDecExpr* ScopeExpr::GetParentClass(){
     return ParentScope->GetParentClass();
 }
 
+ScopeExpr* ScopeExpr::GetMainScope()
+{
+    if (ParentScope == nullptr){
+
+        return this;
+    }
+
+    if (!dynamic_cast<IterationExpr*>(ParentScope) || !dynamic_cast<ConditionalStatementExpr*>(ParentScope)) 
+    {
+        return ParentScope;
+    }
+
+    return ParentScope->GetMainScope();
+
+}
+
+
 // Just added to check the scope, will probably delete or imporve for better testing
 std::string ScopeExpr::GetNames(){
     std::string names;

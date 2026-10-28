@@ -9,6 +9,7 @@
 #include "Parser.h"
 #include "Expr.h"
 #include "CodeGen.h"
+#include "Optimiser.h"
 
 
 std::string ReadFile(std::string path){
@@ -47,7 +48,17 @@ int main()
     Parser parser(tokens);
 
     // generates the trees for each line of the program
-    std::vector<std::unique_ptr<Expr>> trees = std::move(parser.ParseProgram()->Body);
+    std::unique_ptr<ScopeExpr> globalScope = parser.ParseProgram();
+
+    Optimiser obtimiser;
+
+    obtimiser.MarkReachable(globalScope.get());
+    obtimiser.Sweep(*globalScope);
+
+
+    // std::vector<std::unique_ptr<Expr>> trees = std::move(globalScope->Body);
+    std::vector<std::unique_ptr<Expr>> trees = std::move(globalScope.get()->Body);
+
 
     // Creates an instance of code generator
     CodeGen generator;

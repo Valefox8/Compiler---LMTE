@@ -6,6 +6,7 @@ Lexer::Lexer(std::string source)    // constructor
 {
     this->source = source;
     this->position = 0;
+    this->line = 0;
 }
 
 std::vector<Token> Lexer::Tokenize(){
@@ -14,6 +15,15 @@ std::vector<Token> Lexer::Tokenize(){
     while (position < (int)source.length()) // loops for length of string/input
     {
         char current = source[position];    // Current position  
+
+        if (current == '\n')
+        {
+            // A new line starts after this character
+            position++;
+            line++;
+            continue;
+        }
+
         if (std::isspace(current))
         {
             // If its a space, move on
@@ -43,7 +53,7 @@ std::vector<Token> Lexer::Tokenize(){
 
         if (current == '-' && checkforward("->")) // check for the object arrow
         {
-            tokens.push_back(Token(TokenType::Arrow, "->"));
+            tokens.push_back(Token(TokenType::Arrow, "->", line));
             position += 2; // two characters, not one
             continue;
         }
@@ -62,7 +72,7 @@ std::vector<Token> Lexer::Tokenize(){
 
         if (current == '=')                         // check for equals/assignment
         {
-            tokens.push_back(Token(TokenType::Equals, "="));    // Push that token into token list
+            tokens.push_back(Token(TokenType::Equals, "=", line));    // Push that token into token list
             position++;
             continue;
         }
@@ -70,7 +80,7 @@ std::vector<Token> Lexer::Tokenize(){
         if (current == '(')
         {
             // Checks if its a left bracket and pushes
-            tokens.push_back(Token(TokenType::LeftParen, "("));
+            tokens.push_back(Token(TokenType::LeftParen, "(", line));
             position++;
             continue;
         }
@@ -78,7 +88,7 @@ std::vector<Token> Lexer::Tokenize(){
         if (current == ')')
         {
             // Checks if its a right bracket and pushes
-            tokens.push_back(Token(TokenType::RightParen, ")"));
+            tokens.push_back(Token(TokenType::RightParen, ")", line));
             position++;
             continue;
         }
@@ -86,7 +96,7 @@ std::vector<Token> Lexer::Tokenize(){
         if (current == '"')
         {
             // Checks if its a quote and pushes
-            tokens.push_back(Token(TokenType::Quote, "\""));
+            tokens.push_back(Token(TokenType::Quote, "\"", line));
             position++;
             continue;
         }
@@ -94,7 +104,7 @@ std::vector<Token> Lexer::Tokenize(){
         if (current == '|')
         {
             // Checks if its a list item separator and pushes it
-            tokens.push_back(Token(TokenType::Separator, "|"));
+            tokens.push_back(Token(TokenType::Separator, "|", line));
             position++;
             continue;
         }
@@ -102,7 +112,7 @@ std::vector<Token> Lexer::Tokenize(){
         if (current == '.')
         {
             // Checks if its a dot/full stop and pushes it 
-            tokens.push_back(Token(TokenType::Dot, "."));
+            tokens.push_back(Token(TokenType::Dot, ".", line));
             position++;
             continue;
         }
@@ -110,7 +120,7 @@ std::vector<Token> Lexer::Tokenize(){
         if (current == '[')
         {
             // check for [ and pushes it
-            tokens.push_back(Token(TokenType::LeftBracket, "["));
+            tokens.push_back(Token(TokenType::LeftBracket, "[", line));
             position++;
             continue;
         }
@@ -118,7 +128,7 @@ std::vector<Token> Lexer::Tokenize(){
         if (current == ']')
         {
             // check for ] and pushes it
-            tokens.push_back(Token(TokenType::RightBracket, "]"));
+            tokens.push_back(Token(TokenType::RightBracket, "]", line));
             position++;
             continue;
         }
@@ -126,7 +136,7 @@ std::vector<Token> Lexer::Tokenize(){
         if (current == ',')
         {
             // check for , and pushes it
-            tokens.push_back(Token(TokenType::Comma, ","));
+            tokens.push_back(Token(TokenType::Comma, ",", line));
             position++;
             continue;
         }
@@ -134,7 +144,7 @@ std::vector<Token> Lexer::Tokenize(){
         if (current == ':')
         {
             // check for : and pushes it
-            tokens.push_back(Token(TokenType::Colon, ":"));
+            tokens.push_back(Token(TokenType::Colon, ":", line));
             position++;
             continue;
         }
@@ -142,7 +152,7 @@ std::vector<Token> Lexer::Tokenize(){
         if (current == ';')
         {
             // check for ; and pushes it
-            tokens.push_back(Token(TokenType::Semicolon, ";"));
+            tokens.push_back(Token(TokenType::Semicolon, ";", line));
             position++;
             continue;
         }
@@ -152,7 +162,7 @@ std::vector<Token> Lexer::Tokenize(){
     }
 
     //When while loop finishes, implement the end of file token and return
-    tokens.push_back(Token(TokenType::EndOfFile, ""));
+    tokens.push_back(Token(TokenType::EndOfFile, "", line));
     return tokens;
 }
 
@@ -171,7 +181,7 @@ Token Lexer::ReadNumber()
         std::string value = source.substr(start, position - start);
 
         // Creates token of number with a value and returns it
-        return Token(TokenType::Number, value);
+        return Token(TokenType::Number, value, line);
     }
 
     Token Lexer::ReadWord(){
@@ -190,7 +200,7 @@ Token Lexer::ReadNumber()
 
         std::string value = source.substr(start, position - start);     // Finds value between start and end position
         position++; // goes past the end '$'
-        return Token(TokenType::Word, value);     // Returns it
+        return Token(TokenType::Word, value, line);     // Returns it
     }
 
     Token Lexer::ReadLetter(){
@@ -209,7 +219,7 @@ Token Lexer::ReadNumber()
 
         std::string value = source.substr(start, position - start);     // Finds value between start and end position
         position++; // goes past the end '#'
-        return Token(TokenType::Letter, value);     // Returns it
+        return Token(TokenType::Letter, value, line);     // Returns it
     }
 
 Token Lexer::ReadIdOrKey()
@@ -225,63 +235,63 @@ Token Lexer::ReadIdOrKey()
         std::string value = source.substr(start, position - start);
 
         // Checks which of the operations it is and returns the token
-        if (value == "add") return Token(TokenType::Add, value);
-        if (value == "sub") return Token(TokenType::Sub, value);
-        if (value == "mul") return Token(TokenType::Mul, value);
-        if (value == "div") return Token(TokenType::Div, value);
-        if (value == "mod") return Token(TokenType::Mod, value);
+        if (value == "add") return Token(TokenType::Add, value, line);
+        if (value == "sub") return Token(TokenType::Sub, value, line);
+        if (value == "mul") return Token(TokenType::Mul, value, line);
+        if (value == "div") return Token(TokenType::Div, value, line);
+        if (value == "mod") return Token(TokenType::Mod, value, line);
 
         // Variable type identifiers
-        if (value == "Vnum") return Token(TokenType::Vnum, value);
-        if (value == "Vwords") return Token(TokenType::Vwords, value);
-        if (value == "Vboolean") return Token(TokenType::Vboolean, value);
-        if (value == "Vletter") return Token(TokenType::Vletter, value);
-        if (value == "VCharacter") return Token(TokenType::VCharacter, value);
-        if (value == "VDigit") return Token(TokenType::VDigit, value);
+        if (value == "Vnum") return Token(TokenType::Vnum, value, line);
+        if (value == "Vwords") return Token(TokenType::Vwords, value, line);
+        if (value == "Vboolean") return Token(TokenType::Vboolean, value, line);
+        if (value == "Vletter") return Token(TokenType::Vletter, value, line);
+        if (value == "VCharacter") return Token(TokenType::VCharacter, value, line);
+        if (value == "VDigit") return Token(TokenType::VDigit, value, line);
 
         // Real and cake identifiers
-        if (value == "real") return Token(TokenType::Real, value);
-        if (value == "cake") return Token(TokenType::Cake, value);
+        if (value == "real") return Token(TokenType::Real, value, line);
+        if (value == "cake") return Token(TokenType::Cake, value, line);
 
         // List
-        if (value == "anotherone") return Token(TokenType::AnotherOne, value);
+        if (value == "anotherone") return Token(TokenType::AnotherOne, value, line);
 
         // Iteration
-        if (value == "forwhencake") return Token(TokenType::Forwhencake, value);
-        if (value == "handbrake") return Token(TokenType::Handbrake, value);
+        if (value == "forwhencake") return Token(TokenType::Forwhencake, value, line);
+        if (value == "handbrake") return Token(TokenType::Handbrake, value, line);
 
         // Function keywords
-        if (value == "FUNCTION") return Token(TokenType::Function, value);
-        if (value == "leave") return Token(TokenType::Leave, value);
-        if (value == "f") return Token(TokenType::Call, value);
+        if (value == "FUNCTION") return Token(TokenType::Function, value, line);
+        if (value == "leave") return Token(TokenType::Leave, value, line);
+        if (value == "f") return Token(TokenType::Call, value, line);
 
         // Conditional Statement
-        if (value == "iguessif") return Token(TokenType::IguessIf, value);
-        if (value == "guessthis") return Token(TokenType::Guessthis, value);
-        if (value == "guessnot") return Token(TokenType::Guessnot, value);
+        if (value == "iguessif") return Token(TokenType::IguessIf, value, line);
+        if (value == "guessthis") return Token(TokenType::Guessthis, value, line);
+        if (value == "guessnot") return Token(TokenType::Guessnot, value, line);
 
         // Comparison Operators
-        if (value == "equal") return Token(TokenType::Equalto, value);
-        if (value == "lessThan") return Token(TokenType::Lessthan, value);
-        if (value == "moreThan") return Token(TokenType::Morethan, value);
-        if (value == "isTotallyDefinitelyNotEqualTo") return Token(TokenType::Istotallydefinitelynotequalto, value);
-        if (value == "equalLessThan") return Token(TokenType::Equallessthan, value);
-        if (value == "equalMoreThan") return Token(TokenType::Equalmorethan, value);
+        if (value == "equal") return Token(TokenType::Equalto, value, line);
+        if (value == "lessThan") return Token(TokenType::Lessthan, value, line);
+        if (value == "moreThan") return Token(TokenType::Morethan, value, line);
+        if (value == "isTotallyDefinitelyNotEqualTo") return Token(TokenType::Istotallydefinitelynotequalto, value, line);
+        if (value == "equalLessThan") return Token(TokenType::Equallessthan, value, line);
+        if (value == "equalMoreThan") return Token(TokenType::Equalmorethan, value, line);
         
         // Boolean Operator
-        if (value == "dna") return Token(TokenType::Dna, value);
-        if (value == "ro") return Token(TokenType::Ro, value);
+        if (value == "dna") return Token(TokenType::Dna, value, line);
+        if (value == "ro") return Token(TokenType::Ro, value, line);
 
         // Class keywords
-        if (value == "SELF") return Token(TokenType::SELF, value);
+        if (value == "SELF") return Token(TokenType::SELF, value, line);
         // if (value == "selfish") return Token(TokenType::selfish, value);
-        if (value == "public") return Token(TokenType::Public, value);
-        if (value == "private") return Token(TokenType::Private, value);
-        if (value == "protected") return Token(TokenType::Protected, value);
+        if (value == "public") return Token(TokenType::Public, value, line);
+        if (value == "private") return Token(TokenType::Private, value, line);
+        if (value == "protected") return Token(TokenType::Protected, value, line);
 
 
         // Failsafe to treat as an identifier if it doesnt hit any of the above
-        return Token(TokenType::Identifier, value);
+        return Token(TokenType::Identifier, value, line);
     }
 
 
