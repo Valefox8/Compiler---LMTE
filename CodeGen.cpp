@@ -277,6 +277,10 @@ std::string CodeGen::GenCode(Expr* expr){
         }        
         result += "):";
 
+        if (function->ParentCallExpr) {
+            result += "\n" + Indent(GenCode(function->ParentCallExpr.get()));
+        }
+
         // Each statement goes on its own indented line
         for (size_t i = 0; i < function->Body.size(); i++)
         {
@@ -304,7 +308,12 @@ std::string CodeGen::GenCode(Expr* expr){
 
         
         // Generating parameters 
-        result += call->FuncDecExpr->Name + "(";
+        if (call->FuncDecExpr->IsMethod && call->FuncDecExpr->Name == "SELF"){
+            result += "__init__(selfish,";
+        } else {
+            result += call->FuncDecExpr->Name + "(";
+        }
+
         for (size_t i = 0; i < call->Args.size(); i++)
         {
             if (i > 0)

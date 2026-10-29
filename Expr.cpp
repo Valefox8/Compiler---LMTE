@@ -30,6 +30,7 @@ SymbolEntry* ScopeExpr::LookUp(const std::string& varName)
 {
     if (Table.count(varName) == 1)
     {
+        // cout<< varName <<" was returned in "<< this->Name << endl;
         return Table[varName].get();
     }
 
@@ -51,11 +52,12 @@ SymbolEntry* ClassDecExpr::LookUpLocal(const std::string& varName)
 
     if (ClassicClass != nullptr)
     {
-        SymbolEntry* returnSymbol = LookUpLocal(varName);
+        SymbolEntry* returnSymbol = ClassicClass->LookUpLocal(varName);
         if (returnSymbol->Access == TokenType::Private)
         {
             throw std::runtime_error("Attribute: " + varName + " is a private attribute and cant be accessed by children classes");
         }
+        return returnSymbol;
     }
 
     throw std::runtime_error("Cant find in local scope: " + this->Name + " value: "+ varName);      
@@ -75,7 +77,7 @@ void ScopeExpr::Insert(const std::string& varName, std::unique_ptr<SymbolEntry> 
         throw std::runtime_error("This entry expression is null: " + varName);
     }
 
-    std::cout << "Insert " + varName + " into " + this->Name << std::endl;
+    // std::cout << "Insert " + varName + " into " + this->Name << std::endl;
     Table[varName] = std::move(entry);
 }
 
@@ -145,25 +147,25 @@ std::vector<ParameterExpr*> ScopeExpr::GetFunctionPara(std::string funcName)
     ) 
         return allPara; // Special condition of a class not having a constructor
     
+
     // Check if the scope contains the function
     SymbolEntry* symbol = LookUp(funcName);
-    if (symbol->SymK != SymbolKind::Method && symbol->SymK != SymbolKind::Function)
-    {
-        throw std::runtime_error("Cant function and return parameter: " + funcName);
+    if (symbol->SymK != SymbolKind::Method && symbol->SymK != SymbolKind::Function) {
+        throw std::runtime_error("Not a function and cant return parameter: " + funcName);
     }
 
     // Iterating through each Prameter Expression stored inside a function expression
-    FunctionDecExpr* methodExpr = dynamic_cast<FunctionDecExpr*>(symbol->Expression);
+    FunctionDecExpr* funcExpr = dynamic_cast<FunctionDecExpr*>(symbol->Expression);
 
-    if (!methodExpr)
-    {
-        throw std::runtime_error("Cant function and return parameter: " + funcName);
+    if (!funcExpr) {
+        throw std::runtime_error("Not a function expression and cant return parameter: " + funcName);
     }
 
-    size_t length = methodExpr->Param.size();
+    size_t length = funcExpr->Param.size();
+
     for (size_t i = 0; i < length; i++)
     {
-        allPara.push_back(methodExpr->Param[i].get());
+        allPara.push_back(funcExpr->Param[i].get());
     }
 
     return allPara;
@@ -178,7 +180,7 @@ std::vector<ParameterExpr*> ScopeExpr::GetFunctionPara(std::string funcName)
 
 void ScopeExpr::PrintSymbolTable() const
 {
-    std::cout << "\n===== Symbol Table =====\n";
+    std::cout << "\n===== "+this->Name+" =====\n";
 
     for (const auto& [name, entry] : Table)
     {

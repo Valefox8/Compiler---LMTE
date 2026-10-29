@@ -54,6 +54,8 @@ class ClassDecExpr;
 class MethodDecExpr;
 class ParameterExpr;
 class ObjectDecExpr;
+class FunctionCallExpr;
+class AttReferenceExpr;
 
 
 // Scope defined to use the syntax table
@@ -288,6 +290,7 @@ class FunctionDecExpr : public ScopeExpr {
         bool IsMethod;
         std::vector<std::unique_ptr<ParameterExpr>> Param;   // Parameters type and name
         TokenType ReturnType = TokenType::Nothing; // The type the function leaves, Nothing if it doesnt leave anything
+        std::unique_ptr<AttReferenceExpr> ParentCallExpr = nullptr;
         
         FunctionDecExpr
         ( 
@@ -300,8 +303,21 @@ class FunctionDecExpr : public ScopeExpr {
                 IsMethod(isMethod)
         {
         }
-
 };
+
+
+class MethodOverrideExpr : public FunctionDecExpr {
+    public: 
+        
+
+    MethodOverrideExpr(
+        std::string name,
+        ScopeExpr* parentScope = nullptr,
+        TokenType access = TokenType::Public
+    ) : FunctionDecExpr (name, true, parentScope, access)
+    {}
+};
+
 
 // 
 class FunctionCallExpr : public Expr{

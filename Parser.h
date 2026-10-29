@@ -106,6 +106,7 @@ class Parser{
     std::unique_ptr<VarDecExpr> CreateAndRegisterVarDec(TokenType varType, std::string varName, std::unique_ptr<Expr> nameExpr, SymbolKind kind, ScopeExpr* targetScope, TokenType access = TokenType::Public);
     std::unique_ptr<ListExpr> ParseList();         // also self explanitory by the name 
     std::unique_ptr<FunctionDecExpr> ParseFunctionDec(SymbolKind symK, TokenType access = TokenType::Public);   // Parses a FUNCTION declaration
+    std::unique_ptr<AttReferenceExpr> ParseMethodOverride(std::string name);
     std::unique_ptr<ReturnExpr> ParseReturn();        // Parses a 'leave' statement
     std::unique_ptr<FunctionCallExpr> ParseFunctionCall(ClassDecExpr* primaryClassDecExpr = nullptr);   // Parses an 'f' function call
     std::unique_ptr<AttReferenceExpr> ParseAttributeReference();
