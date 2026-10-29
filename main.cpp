@@ -44,20 +44,16 @@ int main()
     // Tokenizes
     std::vector<Token> tokens = lexer.Tokenize();
 
-    // for (Token token : tokens){
-    //     cout << token.Value << static_cast<int> (token.Type) << endl;
-    // }
-
     // Starts parser using the tokens generated previously
     Parser parser(tokens);
 
     // generates the trees for each line of the program
     std::unique_ptr<ScopeExpr> globalScope = parser.ParseProgram();
 
-    // Optimiser obtimiser;
+    Optimiser obtimiser;
 
-    // obtimiser.MarkReachable(globalScope.get());
-    // obtimiser.Sweep(*globalScope);
+    obtimiser.MarkReachable(globalScope.get());
+    obtimiser.Sweep(*globalScope);
 
 
     // std::vector<std::unique_ptr<Expr>> trees = std::move(globalScope->Body);

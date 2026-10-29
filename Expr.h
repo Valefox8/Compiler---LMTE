@@ -296,27 +296,17 @@ class FunctionDecExpr : public ScopeExpr {
         ( 
             std::string name,
             bool isMethod,
+            TokenType returnType,
             ScopeExpr* parentScope = nullptr,
             TokenType access = TokenType::Public
         )   :   ScopeExpr(name, parentScope),
                 Access(access),
-                IsMethod(isMethod)
+                IsMethod(isMethod),
+                ReturnType(returnType)
         {
         }
 };
 
-
-class MethodOverrideExpr : public FunctionDecExpr {
-    public: 
-        
-
-    MethodOverrideExpr(
-        std::string name,
-        ScopeExpr* parentScope = nullptr,
-        TokenType access = TokenType::Public
-    ) : FunctionDecExpr (name, true, parentScope, access)
-    {}
-};
 
 
 // 

@@ -1,24 +1,33 @@
+CanimalC:
+    public:
+        FUNCTION Vnum DECELERATE Vnum speed1 | Vnum x:
+            speed1 = speed1
+            leave 8
+        ;
+    ;
+    private:
+        FUNCTION SELF:
+        ;
+    ;
+;
 
+<!-- Classes -->
+CMyVehicleC: WithTheClassic CanimalC:
+    FUNCTION SELF Vnum speed | Vnum value: TAKEOVER CanimalC -> f SELF:
+        public Vnum selfish -> speed = speed
+        public Vnum selfish -> value = value
+        selfish -> speed = selfish -> speed add 1
+        Vnum x = selfish -> f DECELERATE 3 | 3
+        FUNCTION Vnum DECELERATE Vnum speed1 | Vnum speed2:
+            leave 5
+        ;
+        selfish -> f SELF value | 3
+    ;
 
-
-
-
-say $Hello world$
-say 5 add 3
-
-Vwords name = $deez$
-say name 
-
-Vnum z = 5
-Vnum y = 5
-say z
-say (z equal y)
-
-"nums | 1 | 2 | 3"
-say nums.size()
-say nums.at[0]
-
-Vwords nam2e = ask
-Vnum ag2e = ask
-VDigit d = ask
-Vletter l = ask
+    public:
+        FUNCTION Vnum DECELERATE Vnum speed1 | Vnum speed2: TAKEOVER CanimalC -> f DECELERATE 3 | 3:
+            speed1 = speed1 add speed2
+            leave 8
+        ;
+    ;
+;

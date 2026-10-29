@@ -30,7 +30,6 @@ SymbolEntry* ScopeExpr::LookUp(const std::string& varName)
 {
     if (Table.count(varName) == 1)
     {
-        // cout<< varName <<" was returned in "<< this->Name << endl;
         return Table[varName].get();
     }
 
@@ -38,6 +37,8 @@ SymbolEntry* ScopeExpr::LookUp(const std::string& varName)
     {
         return ParentScope->LookUp(varName);
     }
+
+    this-> PrintSymbolTable();
     throw std::runtime_error("Cant find variable: " + varName);      
 }
 
@@ -68,6 +69,7 @@ void ScopeExpr::Insert(const std::string& varName, std::unique_ptr<SymbolEntry> 
 {
     if (Table.count(varName) == 1)
     {
+        PrintSymbolTable();
         throw std::runtime_error("Variable already declared: " + varName);
     }
 
@@ -77,7 +79,6 @@ void ScopeExpr::Insert(const std::string& varName, std::unique_ptr<SymbolEntry> 
         throw std::runtime_error("This entry expression is null: " + varName);
     }
 
-    // std::cout << "Insert " + varName + " into " + this->Name << std::endl;
     Table[varName] = std::move(entry);
 }
 
@@ -140,16 +141,23 @@ std::vector<ParameterExpr*> ScopeExpr::GetFunctionPara(std::string funcName)
 {
     
     std::vector<ParameterExpr*> allPara;
-    if (
-        funcName == "SELF" && 
-        !Contain("SELF") && 
-        dynamic_cast<ClassDecExpr*>(this)
-    ) 
-        return allPara; // Special condition of a class not having a constructor
+    // if (
+    //     funcName == "SELF" && 
+    //     !Contain("SELF") && 
+    //     dynamic_cast<ClassDecExpr*>(this)
+    // ) 
+    //     return allPara; // Special condition of a class not having a constructor
     
 
     // Check if the scope contains the function
-    SymbolEntry* symbol = LookUp(funcName);
+    SymbolEntry* symbol;
+    if (dynamic_cast<ClassDecExpr*>(this) && dynamic_cast<ClassDecExpr*>(this)->ClassicClass && !Contain(funcName))
+    {
+        symbol = dynamic_cast<ClassDecExpr*>(this)->LookUpLocal(funcName);
+    } else {
+        symbol = LookUp(funcName);
+    }
+
     if (symbol->SymK != SymbolKind::Method && symbol->SymK != SymbolKind::Function) {
         throw std::runtime_error("Not a function and cant return parameter: " + funcName);
     }

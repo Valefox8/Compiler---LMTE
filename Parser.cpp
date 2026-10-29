@@ -110,7 +110,8 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
     if (token.Type == TokenType::Identifier && Peek().Type == TokenType::Arrow)
     {
         SymbolEntry* symbol = currentScope->LookUp(token.Value);
-        if (symbol->SymK == SymbolKind::Object && dynamic_cast<ClassDecExpr*>(symbol->Expression) && symbol->Name != "selfish"){
+        if (symbol->SymK == SymbolKind::Object && dynamic_cast<ClassDecExpr*>(symbol->Expression) && symbol->Name != "selfish")
+        {
             throw std::runtime_error("Static attributes/methods are not implemented yet sorry: " + Current().Value + "; error at line " + std::to_string(Current().LineUsed));
         }
         return ParseAttributeReference();
@@ -146,8 +147,10 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
         // Check if its declared
         Expr* identifier = currentScope->LookUp(name)->Expression;
         if (!dynamic_cast<VarDecExpr*>(identifier) && !dynamic_cast<ParameterExpr*>(identifier))
+        {
             throw std::runtime_error("Undeclared Variable: at line " + std::to_string(next_token.LineUsed) + name );
 
+        }
         return std::make_unique<IdentifierExpr>(name); // A variable name
     }
 
@@ -162,7 +165,7 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
     throw std::runtime_error("Syntax error: unexpected token at line " + std::to_string(Current().LineUsed) + Current().Value);
 }
 
-// CODE ADDED FROM MARTIN
+// Parsing conditional expression like (eg. x == 5 && x < 10)
 std::unique_ptr<Expr> Parser::ParseBooleanOperator(){
     std::unique_ptr<Expr> left = ParseComparisonOperator();
 
@@ -176,6 +179,7 @@ std::unique_ptr<Expr> Parser::ParseBooleanOperator(){
     return left;
 }
 
+// Parsing conditional expression like (eg. x == 5)
 std::unique_ptr<Expr> Parser::ParseComparisonOperator(){
     std::unique_ptr<Expr> left = ParseExpression();
 
@@ -194,7 +198,7 @@ std::unique_ptr<Expr> Parser::ParseComparisonOperator(){
     
     return left;
 }
-// END CODE ADDED FROM MARTIN
+
 
 // Creating the parse tree
 // This is global scope
@@ -225,9 +229,9 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
     }
 
     if (current == TokenType::Say)
-        {
-            return ParseSay();
-        }
+    {
+        return ParseSay();
+    }
 
     if (current == TokenType::Forwhencake)
     {   
@@ -262,10 +266,10 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
     }
 
     // Attribute declaration
-    if ((
+    if (
         current == TokenType::Public || 
         current == TokenType::Private || 
-        current == TokenType::Protected) 
+        current == TokenType::Protected
     )   
     {
         return ParseAttributeDec();
@@ -370,6 +374,8 @@ std::unique_ptr<Expr> Parser::ParseGetValue(TokenType type){
     
 }
 
+
+// Assigning values to attributes and normal variables (eg. x = 3; selfish -> age = 10) 
 std::unique_ptr<VarDecExpr> Parser::CreateAndRegisterVarDec (
     TokenType varType, 
     std::string varName, 
@@ -449,7 +455,6 @@ std::unique_ptr<ListExpr> Parser::ParseList(){
     currentScope->Insert(name, std::move(newEntry));
 
     return newListDecExpr;       // returns the expression created
-
 }
 
 // Follows grammer rule   <ParameterList> -> <Parameter> | <Parameter> '|' <ParameterList> | NOTHING
@@ -590,7 +595,7 @@ std::unique_ptr<ConditionalStatementStructExpr> Parser::ParseConditionalStatemen
 std::unique_ptr<FunctionDecExpr> Parser::ParseFunctionDec(SymbolKind symK, TokenType access){
     Advance();                          // Move past FUNCTION
 
-        // Get the return type if there is one
+    // Get the return type if there is one
     TokenType returnType = TokenType::Nothing;
     TokenType current = Current().Type;
     if (
@@ -604,44 +609,43 @@ std::unique_ptr<FunctionDecExpr> Parser::ParseFunctionDec(SymbolKind symK, Token
         returnType = Advance().Type;
     }
 
-    Token function = Advance(); // Get the function name
+    // Get the function name
+    Token function = Advance(); 
     std::string name = function.Value;
-    bool isMethod = (symK == SymbolKind::Method) ? true : false;
 
-    std::unique_ptr<FunctionDecExpr> newFuncDecExpr = std::make_unique<FunctionDecExpr>(name, isMethod, currentScope, access); 
-    newFuncDecExpr->ReturnType = returnType;
+    // Create new expression and adding to symbol table
+    bool isMethod = (symK == SymbolKind::Method) ? true : false;
+    if (name == "SELF" && isMethod) access = TokenType::Public;
+    std::unique_ptr<FunctionDecExpr> newFuncDecExpr = std::make_unique<FunctionDecExpr>(name, isMethod, returnType, currentScope, access); 
     std::unique_ptr<SymbolEntry> newEntry =  std::make_unique<SymbolEntry>
         (name, returnType, symK, newFuncDecExpr.get(), access, function.LineUsed);
     currentScope->Insert(name, std::move(newEntry));
 
-
-
-
     // Change the current scope so that stuff in the block is added to the correct syntax table
     currentScope = newFuncDecExpr.get();
 
-    // Parsing parameters and the statements inside the function 
+    // Parsing parameters 
     std::vector<std::unique_ptr<ParameterExpr>> params = ParseParams();
     newFuncDecExpr->Param = std::move(params);
 
-
+    // Check if we're overwriting the a method
     if (Peek().Value == "TAKEOVER") {
         newFuncDecExpr->ParentCallExpr = ParseMethodOverride(name);
     }
-
+    
+    // Parse the body of the function
     std::vector<std::unique_ptr<Expr>> body = ParseBlock();
 
 
     // Go back to previous scope after done parsing body and add function to syntax table
     currentScope = currentScope->ParentScope;
-
-
-    // Update function expression attribute
     newFuncDecExpr->Body = std::move(body);
     
     return newFuncDecExpr;
 }
 
+
+// Only called if a function is overwritten
 std::unique_ptr<AttReferenceExpr> Parser::ParseMethodOverride(std::string name){
     ClassDecExpr* classExpr = dynamic_cast<ClassDecExpr*>(currentScope->GetParentClass());
     if (!classExpr) {
@@ -652,10 +656,48 @@ std::unique_ptr<AttReferenceExpr> Parser::ParseMethodOverride(std::string name){
         throw std::runtime_error("Cant override method " + name +"since" + classExpr->Name +" has no parent at line: " + std::to_string(Current().LineUsed));
     }
 
+    FunctionDecExpr* currentMeDecExpr = dynamic_cast<FunctionDecExpr*>(currentScope);  
+    if (!currentMeDecExpr){
+        throw std::runtime_error("Cant override method " + name +"since not inside a scope of a function/method: " + std::to_string(Current().LineUsed));
+    }
+    
+    SymbolEntry* symbol = classExpr->ClassicClass->LookUpLocal(name);
+    FunctionDecExpr* parentMeDecExpr = dynamic_cast<FunctionDecExpr*>(symbol->Expression);
+    if (!parentMeDecExpr) {
+        throw std::runtime_error("Cant find method " + name +"in parent class at: " + std::to_string(Current().LineUsed));
+    }
+
+    if (parentMeDecExpr->Access != currentMeDecExpr->Access){
+        throw std::runtime_error("Differnt access from parent method: " + name +" at: " + std::to_string(Current().LineUsed));
+    }
+
+    if (parentMeDecExpr->Access != currentMeDecExpr->Access){
+        throw std::runtime_error("Differnt access from parent method: " + name +" at: " + std::to_string(Current().LineUsed));
+    }
+
+    if (parentMeDecExpr->ReturnType != currentMeDecExpr->ReturnType) {
+        throw std::runtime_error("Differnt return type from parent method: " + name +" at: " + std::to_string(Current().LineUsed));
+    }
+
+    if (parentMeDecExpr->Param.size() != currentMeDecExpr->Param.size() && name != "SELF") {
+        throw std::runtime_error("Children method overriding parent class must have the same parameters (Exept from constructors): " + name +" at: " + std::to_string(Current().LineUsed));
+    }
+
+    if (name != "SELF")
+    {
+        size_t length = currentMeDecExpr->Param.size();
+
+        for (size_t i = 0; i < length; i++)
+        {
+            if (parentMeDecExpr->Param[i]->Type != currentMeDecExpr->Param[i]->Type){
+                throw std::runtime_error("Children method overriding parent class must have the same parameters (Exept from constructors): " + name +" at: " + std::to_string(Current().LineUsed));
+            }
+        }
+    }
     Advance();      // Move pass ":"
     Advance();      // Move pass "takeover"
 
-    if (Current().Value == "TAKEOVER") {
+    if (Current().Type == TokenType::Colon) {
         if (name == "SELF"){
             throw std::runtime_error("You must override " + classExpr->Name +" parent constructor at line: " + std::to_string(Current().LineUsed));
         }
@@ -841,10 +883,16 @@ std::unique_ptr<FunctionCallExpr> Parser::ParseFunctionCall(ClassDecExpr* primar
     // Get the scope this function was called in. 
     // We need it because we can call a class method in the scope of a function as long as that function is in a class dec scope.
     ScopeExpr* activeScope =  currentScope;
-    if (primaryClassDecExpr) activeScope = primaryClassDecExpr;
 
     // Check current scope symbol table to see if function exists, and to returns the correct expression
-    SymbolEntry* funcSymbol = activeScope->LookUp(funcName);
+    SymbolEntry* funcSymbol;
+    if (primaryClassDecExpr) {
+        activeScope = primaryClassDecExpr;
+        funcSymbol = primaryClassDecExpr->LookUpLocal(funcName);
+    } else {
+        funcSymbol = activeScope->LookUp(funcName);
+    }
+
     if (funcSymbol->SymK != SymbolKind::Function && funcSymbol->SymK != SymbolKind::Method) 
         throw std::runtime_error("Cannot find function/method " + funcName + " at line " + std::to_string(Current().LineUsed));
     
@@ -854,10 +902,9 @@ std::unique_ptr<FunctionCallExpr> Parser::ParseFunctionCall(ClassDecExpr* primar
     }   
 
     // A function is used, so it may not be removed when generating code
-    currentScope->GetMainScope()->CalledExprDec.insert(funcDecExpr);
+    currentScope->CalledExprDec.insert(funcDecExpr);
 
     std::vector<ParameterExpr*> expected = activeScope->GetFunctionPara(funcName);
-
     std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, funcName);
 
     return std::make_unique<FunctionCallExpr>(funcDecExpr, std::move(args));
@@ -873,9 +920,6 @@ std::unique_ptr<AttReferenceExpr> Parser::ParseAttributeReference()
 
     // Only objects are allowed to use ->
     SymbolEntry* primarySymbol = currentScope->LookUp(token.Value);
-
-    
-
     if (primarySymbol->SymK != SymbolKind::Object) {
         throw std::runtime_error("Variable is not an object and does not have an arrow expression: " + token.Value + " at line " + std::to_string(Current().LineUsed));
     }
@@ -894,7 +938,6 @@ std::unique_ptr<AttReferenceExpr> Parser::ParseAttributeReference()
         }
         primaryClassDecExpr = primaryExpr->ClassDefExpr;
     }
-
 
     // Use the arrow function to call function  selfish -> f FUNCTION
     if (Current().Type == TokenType::Call) {
@@ -968,12 +1011,8 @@ std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(ClassDecExpr* parentClass){ 
 
         std::unique_ptr<SymbolEntry> newEntry =  
             std::make_unique<SymbolEntry>(parentClassName, TokenType::Custom, SymbolKind::Object, parentClass, TokenType::Public, Current().LineUsed);
-
         newClassDecExpr->Insert(parentClassName, std::move(newEntry));
-        if (parentClass->Contain("SELF"))
-        {
-            parentClass->GetMainScope()->CalledExprDec.insert(parentClass->LookUp("SELF")->Expression);
-        }
+        parentClass->CalledExprDec.insert(parentClass->LookUp("SELF")->Expression);
     }
     
     Advance(); // Move past the ':'
@@ -989,7 +1028,7 @@ std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(ClassDecExpr* parentClass){ 
         }
 
         // Parsing the constructor.
-        if (currentType == TokenType::Function && Peek().Type == TokenType::SELF)
+        if (currentType == TokenType::Function && Peek().Value == "SELF")
         {
             std::unique_ptr<FunctionDecExpr> classMethodExpr = ParseFunctionDec(SymbolKind::Method, TokenType::Public);
             newClassDecExpr->Body.push_back(std::move(classMethodExpr));
@@ -1018,6 +1057,18 @@ std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(ClassDecExpr* parentClass){ 
             continue;
         }
     }
+
+    // ALL CLASSES MUST HAVE A CONSTRUCTOR NO MATTER WHAT!!!!!!
+    if (!newClassDecExpr->ContainLocal("SELF"))
+    {
+        std::vector<std::unique_ptr<ParameterExpr>> emptyPara; 
+        std::unique_ptr<FunctionDecExpr> emptyConstructor = std::make_unique<FunctionDecExpr>("SELF", true, TokenType::Nothing, newClassDecExpr.get(), TokenType::Public);
+        std::unique_ptr<SymbolEntry> newEntry = std::make_unique<SymbolEntry>("SELF", TokenType::Nothing, SymbolKind::Method, emptyConstructor.get(), TokenType::Public, Current().LineUsed);
+        emptyConstructor->Param = std::move(emptyPara);
+        newClassDecExpr->Body.push_back(std::move(emptyConstructor));
+        newClassDecExpr->Insert("SELF", std::move(newEntry));
+    }
+
     Advance(); // Move past the class's ';'
 
     // Add the new class to the symbol table
@@ -1077,12 +1128,9 @@ std::unique_ptr<ObjectDecExpr> Parser::ParseObjectDec()// Parses 'CName obj = CN
     std::vector<ParameterExpr*> expected = classExpr->GetFunctionPara(); 
     std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, "Class " + className);
 
-    // A class is used, so it may not be removed when generating code
-    currentScope->GetMainScope()->CalledExprDec.insert(classExpr);
-    if (classExpr->Contain("SELF"))
-    {
-        currentScope->GetMainScope()->CalledExprDec.insert(classExpr->LookUp("SELF")->Expression);
-    }
+    // A class is used, so the current scope record its usage.
+    currentScope->CalledExprDec.insert(classExpr);
+    currentScope->CalledExprDec.insert(classExpr->LookUp("SELF")->Expression);
 
     // Get the class expression and create new object expression
     std::unique_ptr<ObjectDecExpr> newObjDecExpr = 

@@ -79,7 +79,7 @@ std::string CodeGen::GenCode(Expr* expr){
     {
         std::string result;
         
-        // See if its 'selfish ->' or an 'object->' calling  
+        // See if its 'selfish ->' or an 'object->' calling
         result += identifier->Name;
         return result;
     }
@@ -277,8 +277,9 @@ std::string CodeGen::GenCode(Expr* expr){
         }        
         result += "):";
 
+        // See if 
         if (function->ParentCallExpr) {
-            result += "\n" + Indent(GenCode(function->ParentCallExpr.get()));
+            result += "\n" + Indent("super()." + GenCode(function->ParentCallExpr->Attribute.get()));
         }
 
         // Each statement goes on its own indented line
@@ -309,10 +310,11 @@ std::string CodeGen::GenCode(Expr* expr){
         
         // Generating parameters 
         if (call->FuncDecExpr->IsMethod && call->FuncDecExpr->Name == "SELF"){
-            result += "__init__(selfish,";
+            result += "__init__(";
         } else {
             result += call->FuncDecExpr->Name + "(";
         }
+
 
         for (size_t i = 0; i < call->Args.size(); i++)
         {
@@ -408,27 +410,6 @@ std::string CodeGen::GenCode(Expr* expr){
 
         return result;  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
-
-    // Say becomes a print and the value written within print
-    if (SayExpr* say = dynamic_cast<SayExpr*>(expr))
-    {
-        return "print(" + GenCode(say->Value.get()) + ")";
-    }
-
-if (AskExpr* ask = dynamic_cast<AskExpr*>(expr))
-{
-    if (ask->Type == TokenType::Vnum || ask->Type == TokenType::VDigit)
-    {
-        return "int(input())";
-    }
-
-    if (ask->Type == TokenType::Vboolean)
-    {
-        throw std::runtime_error("Ask type cannot be boolean");
-    }
-
-    return "input()";
-}
 
 
     // Unknown type 
