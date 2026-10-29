@@ -401,4 +401,26 @@ class ObjectDecExpr : public Expr{ // CMyVehicle Ford1 = CMyVehicle 100 | 10
         }
 };
 
+class SayExpr : public Expr
+{
+public:
+    std::unique_ptr<Expr> Value;
+
+    SayExpr(std::unique_ptr<Expr> value)
+    {
+        this->Value = std::move(value);
+    }
+};
+
+class AskExpr : public Expr
+{
+public:
+    TokenType Type;
+
+    AskExpr()
+    {
+        this->Type = TokenType::Vwords;
+    }
+};
+
 #endif

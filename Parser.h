@@ -113,6 +113,7 @@ class Parser{
     std::unique_ptr<ClassDecExpr> ParseClassDec(ClassDecExpr* parentClass =  nullptr); // Parses class declarations
     std::unique_ptr<ClassDecExpr> ParseInheritance();
     std::unique_ptr<ObjectDecExpr> ParseObjectDec(); // Parses 'CName obj = CName args'
+    std::unique_ptr<SayExpr> ParseSay(); // print implementation
 
 };
 

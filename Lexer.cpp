@@ -260,6 +260,10 @@ Token Lexer::ReadIdOrKey()
         if (value == "forwhencake") return Token(TokenType::Forwhencake, value, line);
         if (value == "handbrake") return Token(TokenType::Handbrake, value, line);
 
+        // Input and output keywords
+        if (value == "say") return Token(TokenType::Say, value, line);
+        if (value == "ask") return Token(TokenType::Ask, value, line);
+
         // Function keywords
         if (value == "FUNCTION") return Token(TokenType::Function, value, line);
         if (value == "leave") return Token(TokenType::Leave, value, line);

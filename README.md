@@ -237,8 +237,20 @@ Example:
  
 #### Print/Input
  
-- print and input are both very simplistic and are implemented in the same manner as python using the `print()` and `<variablename> = input()` system
-- 
+- Print and input are implemented using new syntax in the RandomGibberish Language 
+- It uses the new keyworks say (print) and ask (input) in the syntax below:
+  - `say <output>`
+- ask implementation allows for the user to input their own value under either variable types: Vwords, Vnum, VDigit and Vletter, in the format below:
+  - `<Type> <VarName> = ask`
+Examples:
+```
+say $Hello world$
+say 5 add 3
+
+Vwords nam2e = ask
+Vnum ag2e = ask
+```
+  
 #### Size:
  - Size is an extention on the list system
 - It returns the size of the lists

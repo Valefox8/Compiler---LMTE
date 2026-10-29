@@ -67,6 +67,12 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
     {
         return ParseList();
     }
+
+    if (token.Type == TokenType::Ask)
+    {
+        Advance();
+        return std::make_unique<AskExpr>();
+    }
     
     if (token.Type == TokenType::Call)                           // Check if its the start of a function call
     {
@@ -215,6 +221,11 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
         return ParseVarDec();
     }
 
+    if (current == TokenType::Say)
+        {
+            return ParseSay();
+        }
+
     if (current == TokenType::Forwhencake)
     {   
         return ParseIteration();
@@ -299,7 +310,7 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
 // Bassically a helper function to make ParseVarDec() shorter.
 std::unique_ptr<Expr> Parser::ParseGetValue(TokenType type){
     // ParseVarDec checks if right type
-    if (Current().Type == TokenType::Call || Peek().Type == TokenType::Arrow)
+    if (Current().Type == TokenType::Call || Current().Type == TokenType::Ask || Peek().Type == TokenType::Arrow)
     {
         return ParseExpression();
     }
@@ -723,6 +734,12 @@ TokenType Parser::GetExprType(Expr* expr){
 
 // Throws an error if the value is not the right type
 void Parser::CheckType(TokenType wanted, Expr* value, std::string what){
+    AskExpr* ask = dynamic_cast<AskExpr*>(value);
+    if (ask)
+    {
+        ask->Type = wanted;
+    }
+    
     TokenType given = GetExprType(value);
 
     if (given == TokenType::Nothing)
@@ -1019,3 +1036,9 @@ std::unique_ptr<ObjectDecExpr> Parser::ParseObjectDec()// Parses 'CName obj = CN
 
     return newObjDecExpr;
 }; 
+
+std::unique_ptr<SayExpr> Parser::ParseSay(){
+    Advance();      // Move past say
+    std::unique_ptr<Expr> value = ParseExpression();
+    return std::make_unique<SayExpr>(std::move(value));
+}
