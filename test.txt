@@ -1,22 +1,24 @@
-CanimalC:
-    FUNCTION SELF Vnum speed | Vnum value:
-        public Vnum selfish -> speed = 5
-    ;
-    public:
-        FUNCTION go Vnum speed | Vnum value:
-            selfish -> speed = 5
-        ;
-
-    ;
-;
-
-<!-- Classes -->
-CCatC: WithTheClassic CanimalC:
-    FUNCTION SELF: 
-        public Vnum selfish -> age = selfish -> go 3 | 3
-    ;
-;
 
 
-<!-- Objects -->
-CCatC eee12333 = CCatC
+
+
+
+say $Hello world$
+say 5 add 3
+
+Vwords name = $deez$
+say name 
+
+Vnum z = 5
+Vnum y = 5
+say z
+say (z equal y)
+
+"nums | 1 | 2 | 3"
+say nums.size()
+say nums.at[0]
+
+Vwords nam2e = ask
+Vnum ag2e = ask
+VDigit d = ask
+Vletter l = ask

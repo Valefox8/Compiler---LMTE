@@ -27,6 +27,10 @@ enum class TokenType
     EndOfFile,
     Equals,
 
+    // input/print
+    Say,
+    Ask,
+
     // Variable types
     Vnum,
     Vwords,
