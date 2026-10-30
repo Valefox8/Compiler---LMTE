@@ -3,6 +3,7 @@
 Parser::Parser(std::vector<Token> tokens){
     this->tokens = tokens;    // Initialise tokens
     this->position = 0;       // Initialise position
+    this->currentScope = GlobalScope.get();
     this->inWhile = false;
 }
 
@@ -146,10 +147,8 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
         // If its not an arrow or a dot function then its just a normal variable/parameter
         // Check if its declared
         Expr* identifier = currentScope->LookUp(name)->Expression;
-        if (!dynamic_cast<VarDecExpr*>(identifier) && !dynamic_cast<ParameterExpr*>(identifier))
-        {
+        if (!dynamic_cast<VarDecExpr*>(identifier) && !dynamic_cast<ParameterExpr*>(identifier)) {
             throw std::runtime_error("Undeclared Variable: at line " + std::to_string(next_token.LineUsed) + name );
-
         }
         return std::make_unique<IdentifierExpr>(name); // A variable name
     }
@@ -182,6 +181,8 @@ std::unique_ptr<Expr> Parser::ParseBooleanOperator(){
 // Parsing conditional expression like (eg. x == 5)
 std::unique_ptr<Expr> Parser::ParseComparisonOperator(){
     std::unique_ptr<Expr> left = ParseExpression();
+    CheckVarDecUsage(left.get(), currentScope);
+    TokenType leftType = GetExprType(left.get());
 
     while (
         Current().Type == TokenType::Equalto || 
@@ -193,6 +194,11 @@ std::unique_ptr<Expr> Parser::ParseComparisonOperator(){
     ) {
         TokenType op = Advance().Type;
         std::unique_ptr<Expr> right = ParseExpression();
+        CheckVarDecUsage(left.get(), currentScope);
+        TokenType rightType = GetExprType(right.get());
+        if (leftType != rightType){
+            throw std::runtime_error("Cant do comparison with differnt types at around line " + std::to_string(Current().LineUsed));
+        }
         left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
     }
     
@@ -290,26 +296,28 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
     std::unique_ptr<Expr> expr = ParseExpression(); // Could be an expression, or the target of an assignment
     if (Current().Type == TokenType::Equals) // It was a target, so this is a reassignment
     {
-        if (!dynamic_cast<IdentifierExpr*>(expr.get()) &&
-            !dynamic_cast<AttReferenceExpr*>(expr.get()))
-        {
+        IdentifierExpr* idExpr = dynamic_cast<IdentifierExpr*>(expr.get());
+        AttReferenceExpr* attExpr = dynamic_cast<AttReferenceExpr*>(expr.get());
+        if (!idExpr && !attExpr) {
             throw std::runtime_error("You cannot assign to that at line " + std::to_string(Current().LineUsed));
         }
         Advance(); // Move past the '='
 
-        TokenType varType;
-        if (IdentifierExpr* idExpr = dynamic_cast<IdentifierExpr*>(expr.get()))
-            varType = currentScope->LookUp(idExpr->Name)->Type;
-        
-        if (AttReferenceExpr* attExpr = dynamic_cast<AttReferenceExpr*>(expr.get()))
-            varType = attExpr->Type;
-
         std::unique_ptr<Expr> value = ParseExpression(); // The new value
+
+        TokenType varType;
+        if (idExpr) {
+            SymbolEntry* symbol = currentScope->LookUp(idExpr->Name);
+            if (VarDecExpr* usedExpr = dynamic_cast<VarDecExpr*>(symbol->Expression)) CheckVarDecUsage(value.get(), usedExpr);
+            varType = symbol->Type;
+        } else {
+            varType = attExpr->Type;
+        }            
 
         CheckType(varType, value.get(), "Variable");
         return std::make_unique<AssignExpr>(std::move(expr), std::move(value));
     }
-
+    
     return expr;
 
 }
@@ -317,34 +325,16 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
 // Bassically a helper function to make ParseVarDec() shorter.
 std::unique_ptr<Expr> Parser::ParseGetValue(TokenType type){
     // ParseVarDec checks if right type
-    if (Current().Type == TokenType::Call || Current().Type == TokenType::Ask || Peek().Type == TokenType::Arrow)
-    {
-        return ParseExpression();
-    }
-
-    if (type == TokenType::Vwords){
-        Token lit = Advance();  // Gets the literal and moves position
-        return std::make_unique<WordExpr>(lit.Value);  // Saves this value 
-    }
-
-    if (type == TokenType::Vletter)
-    {
-        Token lit = Advance();          // Gets the literal and moves position
-        return std::make_unique<LetterExpr>(lit.Value);    // Saves this value 
-    }
-
-    if (type == TokenType::Vboolean)
-    {
-        Token lit = Advance();          // Gets the literal and moves position
-        bool boolValue = NULL;
-        if(lit.Type == TokenType::Real){
-            boolValue = true;
-        }
-        else if(lit.Type == TokenType::Cake){
-            boolValue = false;
-        }
-
-        return std::make_unique<BooleanExpr>(boolValue);    // Saves this value 
+    if (
+        type == TokenType::Vwords ||
+        type == TokenType::Vboolean ||
+        type == TokenType::Vnum ||
+        type == TokenType::Vletter ||
+        Current().Type == TokenType::Call ||
+        Current().Type == TokenType::Ask ||
+        Peek().Type == TokenType::Arrow
+    ){
+        return ParseExpression();  // Saves this value 
     }
 
     if (type == TokenType::VCharacter){
@@ -366,12 +356,7 @@ std::unique_ptr<Expr> Parser::ParseGetValue(TokenType type){
         return std::make_unique<DigitExpr>(lit.Value);
     }
 
-    if(type == TokenType::Vnum){
-        return ParseExpression();      // Vnum can be a whole expression or just a value which is covered in parse expression
-    } 
-
-    throw std::runtime_error("Thats not a type lil bro lock in at line " + std::to_string(Current().LineUsed));   // Throws an error if its not a valid type
-    
+    throw std::runtime_error("Thats not a type lil bro lock in at line " + std::to_string(Current().LineUsed));   // Throws an error if its not a valid type    
 }
 
 
@@ -389,15 +374,14 @@ std::unique_ptr<VarDecExpr> Parser::CreateAndRegisterVarDec (
     // Value must be same type as variable declared
     CheckType(varType, varValue.get(), "Variable '" + varName + "'");
 
-
     // Create expression and make new entry to symbol table
     std::unique_ptr<VarDecExpr> newVarDecExpr = std::make_unique<VarDecExpr>(varType, std::move(nameExpr), std::move(varValue));
     std::unique_ptr<SymbolEntry> newEntry = std::make_unique<SymbolEntry>(varName, varType, kind, newVarDecExpr.get(), access);
-
     
     // Adding to the current scope syntax table or the accesstor class
     targetScope->Insert(varName, std::move(newEntry));
-
+    CheckVarDecUsage (newVarDecExpr->Value.get(), newVarDecExpr.get());
+    
     return newVarDecExpr;       // returns the expression created
 }
 
@@ -533,6 +517,7 @@ std::unique_ptr<IterationExpr> Parser::ParseIteration(){
     if(childWhile == false){
         inWhile = false;
     }
+    currentScope->MarkUsed(newIterationExpr.get());
     return std::move(newIterationExpr);
 }
 
@@ -573,6 +558,7 @@ std::unique_ptr<ConditionalStatementExpr> Parser::ParseConditionalStatement(){
     // reset to parent scope after finsih body part
     currentScope = currentScope->ParentScope;
 
+    currentScope->MarkUsed(newCondStateExpr.get());
     return std::move(newCondStateExpr);
 }
 
@@ -588,7 +574,9 @@ std::unique_ptr<ConditionalStatementStructExpr> Parser::ParseConditionalStatemen
     if (Current().Type == TokenType::Guessnot)
         aConditionStatement.push_back(ParseConditionalStatement());
 
-    return std::make_unique<ConditionalStatementStructExpr>(std::move(aConditionStatement));
+    std::unique_ptr<ConditionalStatementStructExpr> newConStruct=  std::make_unique<ConditionalStatementStructExpr>(std::move(aConditionStatement));
+    currentScope->MarkUsed(newConStruct.get());
+    return newConStruct;
 }
 
 // Follows grammer rule   <FunctionDeclaration> -> FUNCTION Identifier <ParameterList>: <StatementList>;
@@ -738,6 +726,7 @@ std::unique_ptr<ReturnExpr> Parser::ParseReturn(){
     }
 
     std::unique_ptr<Expr> value = ParseExpression();
+    CheckVarDecUsage(value.get(), currentScope);
     CheckType(function->ReturnType, value.get(), "leave in function " + function->Name);
 
     return std::make_unique<ReturnExpr>(std::move(value));
@@ -862,6 +851,11 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseArgs(std::vector<ParameterExpr*>
         }
 
         std::unique_ptr<Expr> arg = ParseExpression();
+        if (IdentifierExpr* idExpr = dynamic_cast<IdentifierExpr*>(arg.get())) {
+            if (VarDecExpr* varDec = dynamic_cast<VarDecExpr*>(currentScope->LookUp(idExpr->Name)->Expression)){
+                currentScope->MarkUsed(varDec);
+            }
+        }
 
         // The argument has to match the type of the parameter
         CheckType(expected[i]->Type, arg.get(), name + " argument '" + expected[i]->Name + "'");
@@ -902,7 +896,7 @@ std::unique_ptr<FunctionCallExpr> Parser::ParseFunctionCall(ClassDecExpr* primar
     }   
 
     // A function is used, so it may not be removed when generating code
-    currentScope->CalledExprDec.insert(funcDecExpr);
+    currentScope->MarkUsed(funcDecExpr);
 
     std::vector<ParameterExpr*> expected = activeScope->GetFunctionPara(funcName);
     std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, funcName);
@@ -1012,7 +1006,6 @@ std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(ClassDecExpr* parentClass){ 
         std::unique_ptr<SymbolEntry> newEntry =  
             std::make_unique<SymbolEntry>(parentClassName, TokenType::Custom, SymbolKind::Object, parentClass, TokenType::Public, Current().LineUsed);
         newClassDecExpr->Insert(parentClassName, std::move(newEntry));
-        parentClass->CalledExprDec.insert(parentClass->LookUp("SELF")->Expression);
     }
     
     Advance(); // Move past the ':'
@@ -1092,10 +1085,7 @@ std::unique_ptr<ClassDecExpr> Parser::ParseInheritance()
     }
 
     std::unique_ptr<ClassDecExpr> childrenClass = ParseClassDec(parentClassExpr);
-
-
-
-    childrenClass->CalledExprDec.insert(parentClassExpr);
+    childrenClass->MarkUsed(parentClassExpr);
     return childrenClass;
 }
 
@@ -1129,8 +1119,7 @@ std::unique_ptr<ObjectDecExpr> Parser::ParseObjectDec()// Parses 'CName obj = CN
     std::vector<std::unique_ptr<Expr>> args = ParseArgs(expected, "Class " + className);
 
     // A class is used, so the current scope record its usage.
-    currentScope->CalledExprDec.insert(classExpr);
-    currentScope->CalledExprDec.insert(classExpr->LookUp("SELF")->Expression);
+    currentScope->MarkUsed(classExpr);
 
     // Get the class expression and create new object expression
     std::unique_ptr<ObjectDecExpr> newObjDecExpr = 
@@ -1147,6 +1136,38 @@ std::unique_ptr<ObjectDecExpr> Parser::ParseObjectDec()// Parses 'CName obj = CN
 
 std::unique_ptr<SayExpr> Parser::ParseSay(){
     Advance();      // Move past say
-    std::unique_ptr<Expr> value = ParseExpression();
-    return std::make_unique<SayExpr>(std::move(value));
+    std::unique_ptr<Expr> value = ParseExpression();                // Get the expr for printing
+    std::unique_ptr<SayExpr> newSayExpr =  std::make_unique<SayExpr>(std::move(value));
+    CheckVarDecUsage(newSayExpr->Value.get(), newSayExpr.get());    // The declaration in the bracket is preserved and not removed later in optimisation
+    currentScope->MarkUsed(newSayExpr.get());                       // Tell the parser to not delete this print
+    return newSayExpr;
+}
+
+
+// Record all the declartion of all the normal variables used.
+void Parser::CheckVarDecUsage (Expr* exprUsed, Expr* expr)
+{
+    if (!dynamic_cast<CheckUsage*>(expr)){
+        throw std::runtime_error("This is not a CheckUsage class at line " + std::to_string(Current().LineUsed));  // As per the production rules
+    }
+
+    // See if its the VarDecExpr->Value == IdentifierExpr
+    if (IdentifierExpr* valueIdExpr = dynamic_cast<IdentifierExpr*>(exprUsed)){
+        SymbolEntry* varValueSymbol = currentScope->LookUp(valueIdExpr->Name);
+        VarDecExpr* varDecExpr = dynamic_cast<VarDecExpr*>(varValueSymbol->Expression);
+        if (varDecExpr && varValueSymbol->SymK == SymbolKind::Variable){
+            dynamic_cast<CheckUsage*>(expr)->MarkUsed(varDecExpr);
+        }
+    }
+
+    // Check each expr to see if IdentifierExpr is used
+    if (BinaryExpr* biExpr = dynamic_cast<BinaryExpr*>(exprUsed)){
+        CheckVarDecUsage(biExpr->Left.get(), expr);
+        CheckVarDecUsage(biExpr->Right.get(), expr);
+    }
+
+    // All function call preserve the variable that calls it
+    if (FunctionCallExpr* funcCall = dynamic_cast<FunctionCallExpr*>(exprUsed)) {
+        currentScope->MarkUsed(expr);
+    }
 }

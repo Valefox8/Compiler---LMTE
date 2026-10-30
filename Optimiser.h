@@ -1,12 +1,11 @@
+// If you want to sope the optimiser from running, remove its declaration and usage in the main.cpp file
+
 #ifndef OPTIMISER_H
 #define OPTIMISER_H
 
 #include <vector>
 #include <memory>
-#include <stdexcept>
-#include <map>
 #include <string>
-#include <iostream>
 #include <unordered_set>
 
 
@@ -21,11 +20,13 @@ class Optimiser{
 
     public:
     Optimiser();
-    void MarkReachable(ScopeExpr* scope);
+    void MarkReachableScope(ScopeExpr* scope);
+    void MarkReachableExpr(Expr* expr);
 
     // IMPORTANT: USING THIS WILL ACTUALLY REMOVE UNUSED EXPRESSION IN GLOBAL SCOPE, MAKING SYMBOL TABLE USELESS. 
     // LET ME KNOW IF U WANNA KEEP UNUSED EXPRESSION, I'LL THINK OF SOMETHING ELSE INSTEAD.
     void Sweep(ScopeExpr& currentScope);
+
 
 };
 

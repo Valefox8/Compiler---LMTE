@@ -52,7 +52,7 @@ int main()
 
     Optimiser obtimiser;
 
-    obtimiser.MarkReachable(globalScope.get());
+    obtimiser.MarkReachableScope(globalScope.get());
     obtimiser.Sweep(*globalScope);
 
 

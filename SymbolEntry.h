@@ -6,7 +6,9 @@
 #include<stdexcept>
 #include<memory>
 #include<iostream>
+
 #include"Expr.h"
+#include"TokenType.h"
 
 class Expr;
 
@@ -19,33 +21,21 @@ enum class SymbolKind
     Function,
     Method,
     Class,
-    Parameter,      // I feel like its very similar to variables, maybe we could delete it
-};
-
-// TODO: change the code to use this instead of TokenType plz, we should keep them seperated
-enum class DataType
-{
-    Vnum,
-    Vwords,
-    Vboolean,
-    Vletter,
-    VCharacter,
-    VDigit,
-    List,
-    Custom,
+    Parameter,
 };
 
 
+// Each entry in the symbol table
 class SymbolEntry
 {
     public:
         std::string Name;   
-        TokenType Type;         //TODO: Add type checking for the return type of a function 
+        TokenType Type;        
         SymbolKind SymK;        // Check if a symbol is a variable, a class declaration, a function or a parameter
         Expr* Expression;       // Points to the definition/expression of a statement
         TokenType Access;
-        int DeclarationLine;    //TODO: this would have been very useful had we implemented it lol. It would make bug fixes so much easier omg 
-                                // We could not implement DeclarationLine i guess. Only useful for BUG FIXING (omg). it seems simple tho
+        int DeclarationLine;    
+                                
         SymbolEntry
         (
             std::string name, 

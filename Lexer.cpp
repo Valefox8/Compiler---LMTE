@@ -287,8 +287,6 @@ Token Lexer::ReadIdOrKey()
         if (value == "ro") return Token(TokenType::Ro, value, line);
 
         // Class keywords
-        // if (value == "SELF") return Token(TokenType::SELF, value, line);
-        // if (value == "selfish") return Token(TokenType::selfish, value);
         if (value == "public") return Token(TokenType::Public, value, line);
         if (value == "private") return Token(TokenType::Private, value, line);
         if (value == "protected") return Token(TokenType::Protected, value, line);

@@ -50,6 +50,8 @@
 #define CODE_GENERATOR_H
 
 #include <string>
+#include <stdexcept>
+#include "TokenType.h"
 #include "Expr.h"
 
 
@@ -59,14 +61,7 @@ class CodeGen
 private:
     std::string Operator(TokenType op);
     std::string Indent(std::string);
-
-    std::string GenCodeClassDec(ClassDecExpr* classDec);
-    
-    // std::string Iteration(IterationExpr* expr);
-    // std::string ConditionalStatementStruct(ConditionalStatementStructExpr* expr);
-    // std::string ConditionalStatement(ConditionalStatementExpr* expr);
-    
-
+        
 public:
     std::string GenCode(Expr* expr);
 };

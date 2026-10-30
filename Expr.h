@@ -35,19 +35,28 @@
 #include <vector>
 #include <memory>
 #include <string>
-#include <iostream>
-#include "TokenType.h"
 #include <utility>
 #include <unordered_set>
+#include <iostream>
+
 #include"SymbolEntry.h"
-using namespace std;
+#include "TokenType.h"
+
 
 // These are for the parser where it defines the tree node shapes
 
 class Expr  // Base class
 {
-public:
-    virtual ~Expr() {}
+    public:
+        virtual ~Expr() {}
+};
+
+class CheckUsage
+{
+    public:
+        virtual ~CheckUsage() {}
+        std::unordered_set<Expr*> CalledExprDec;
+        bool MarkUsed(Expr* expr);
 };
 
 class ClassDecExpr;
@@ -59,13 +68,12 @@ class AttReferenceExpr;
 
 
 // Scope defined to use the syntax table
-class ScopeExpr : public Expr {
+class ScopeExpr : public Expr, public CheckUsage {
     public: 
         std::vector<std::unique_ptr<Expr>> Body; // The statements inside the scope
         std::map<std::string, std::unique_ptr<SymbolEntry>> Table;
         ScopeExpr* ParentScope;
         std::string Name;
-        std::unordered_set<Expr*> CalledExprDec;
 
         ScopeExpr (std::string name = "", ScopeExpr* parentScope = nullptr)
         :   ParentScope(parentScope),
@@ -77,9 +85,7 @@ class ScopeExpr : public Expr {
         bool ContainLocal (const std::string& varName);
         SymbolEntry* LookUp(const std::string& varName);
         void Insert(const std::string& varName, std::unique_ptr<SymbolEntry> entry);
-        bool Update(const std::string& varName, std::unique_ptr<SymbolEntry> entry);
         ClassDecExpr* GetParentClass();
-        ScopeExpr* GetMainScope();
         std::string GetNames();
         void PrintSymbolTable() const;
         std::vector<ParameterExpr*> GetFunctionPara(std::string funcName = "SELF");
@@ -99,7 +105,8 @@ public:
     }
 };
 
-class IdentifierExpr : public Expr  // Identifies a variable/identifier
+// Identifies a variable/identifier
+class IdentifierExpr : public Expr  
 {
 public:
     std::string Name;
@@ -110,7 +117,9 @@ public:
     }
 };
 
-class BinaryExpr : public Expr      // Identifies an expression // This is the structure for a 3 prong (number operator number) // Three address code
+// Identifies an expression 
+// This is the structure for a 3 prong (number operator number) Three address code
+class BinaryExpr : public Expr      
 {
 public:
     std::unique_ptr<Expr> Left;
@@ -184,7 +193,7 @@ public:
 };
 
 // The bigger fucntion for variable dec
-class VarDecExpr : public Expr{
+class VarDecExpr : public Expr, public CheckUsage {
     public:
         // The 3 parts of variable dec (type, name and value)
         TokenType VarType;              // Vnum, Vwords, Vboolean, Vletter, etc.
@@ -284,7 +293,7 @@ class ParameterExpr : public Expr {
 };
 
 // Is used for both normal function an method
-class FunctionDecExpr : public ScopeExpr {
+class FunctionDecExpr : public ScopeExpr{
     public:
         TokenType Access;
         bool IsMethod;
@@ -362,9 +371,9 @@ class ClassDecExpr : public ScopeExpr {
 
 
 // THESE ARE FOR READING AND WRITING VALUES
-class AttReferenceExpr : public Expr {
+class AttReferenceExpr : public Expr, public CheckUsage {
     public:
-        std::unique_ptr<IdentifierExpr> Primary;        // An IdentifierExpr or an AttributeExpr
+        std::unique_ptr<IdentifierExpr> Primary;        // An IdentifierExpr
         std::unique_ptr<Expr> Attribute;                // Whatever it is being set to
         TokenType Access;                               // Public, Private or Protected
         TokenType Type;
@@ -407,7 +416,7 @@ class ObjectDecExpr : public Expr{ // CMyVehicle Ford1 = CMyVehicle 100 | 10
         }
 };
 
-class SayExpr : public Expr
+class SayExpr : public Expr, public CheckUsage
 {
 public:
     std::unique_ptr<Expr> Value;

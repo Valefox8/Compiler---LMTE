@@ -82,10 +82,13 @@ void ScopeExpr::Insert(const std::string& varName, std::unique_ptr<SymbolEntry> 
     Table[varName] = std::move(entry);
 }
 
-// TO DO: probably needed if we want to implement type conversion or smth
-bool ScopeExpr::Update(const std::string& varName, std::unique_ptr<SymbolEntry> entry)
+
+bool CheckUsage::MarkUsed(Expr* expr)
 {
-    return false;
+    if (ClassDecExpr* classExpr = dynamic_cast<ClassDecExpr*>(expr)){
+        CalledExprDec.insert(classExpr->LookUp("SELF")->Expression);
+    }
+    return CalledExprDec.insert(expr).second;
 }
 
 // Continuously search through parent scope to find a class declaration expression. 
@@ -108,22 +111,6 @@ ClassDecExpr* ScopeExpr::GetParentClass(){
     return ParentScope->GetParentClass();
 }
 
-ScopeExpr* ScopeExpr::GetMainScope()
-{
-    if (ParentScope == nullptr){
-
-        return this;
-    }
-
-    if (!dynamic_cast<IterationExpr*>(ParentScope) || !dynamic_cast<ConditionalStatementExpr*>(ParentScope)) 
-    {
-        return ParentScope;
-    }
-
-    return ParentScope->GetMainScope();
-
-}
-
 
 // Just added to check the scope, will probably delete or imporve for better testing
 std::string ScopeExpr::GetNames(){
@@ -141,14 +128,7 @@ std::vector<ParameterExpr*> ScopeExpr::GetFunctionPara(std::string funcName)
 {
     
     std::vector<ParameterExpr*> allPara;
-    // if (
-    //     funcName == "SELF" && 
-    //     !Contain("SELF") && 
-    //     dynamic_cast<ClassDecExpr*>(this)
-    // ) 
-    //     return allPara; // Special condition of a class not having a constructor
     
-
     // Check if the scope contains the function
     SymbolEntry* symbol;
     if (dynamic_cast<ClassDecExpr*>(this) && dynamic_cast<ClassDecExpr*>(this)->ClassicClass && !Contain(funcName))
@@ -178,12 +158,6 @@ std::vector<ParameterExpr*> ScopeExpr::GetFunctionPara(std::string funcName)
 
     return allPara;
 };
-
-
-// std::vector<ParameterExpr*> ObjectDecExpr::GetClassPara(std::string methodName)
-// {
-//     return dynamic_cast<MethodDecExpr*>(dynamic_cast<ClassDecExpr*>(ClassDefEntry->Expression)->LookUp(methodName)->Expression)->Param.get();
-// }
 
 
 void ScopeExpr::PrintSymbolTable() const

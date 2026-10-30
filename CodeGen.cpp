@@ -1,6 +1,4 @@
 #include "CodeGen.h"
-#include <stdexcept>
-#include <iostream>
 
 
 
@@ -68,7 +66,6 @@ std::string CodeGen::Indent(std::string text){
 std::string CodeGen::GenCode(Expr* expr){
 
     // Return the number as its text value
-
     if (NumberExpr* number = dynamic_cast<NumberExpr*>(expr))
     {
         return number->Value;
@@ -140,11 +137,6 @@ std::string CodeGen::GenCode(Expr* expr){
 
         return result;  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
-
-    // if (VarDecExpr* decl = dynamic_cast<VarDecExpr*>(expr))
-    // {
-    //     return "success";
-    // }
 
 
     if(dynamic_cast<HandbrakeExpr*>(expr)){
@@ -410,7 +402,26 @@ std::string CodeGen::GenCode(Expr* expr){
 
         return result;  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
+    // Say becomes a print and the value written within print
+    if (SayExpr* say = dynamic_cast<SayExpr*>(expr))
+    {
+        return "print(" + GenCode(say->Value.get()) + ")";
+    }
 
+    if (AskExpr* ask = dynamic_cast<AskExpr*>(expr))
+    {
+        if (ask->Type == TokenType::Vnum || ask->Type == TokenType::VDigit)
+        {
+            return "int(input())";
+        }
+
+        if (ask->Type == TokenType::Vboolean)
+        {
+            throw std::runtime_error("Ask type cannot be boolean");
+        }
+
+        return "input()";
+    }
 
     // Unknown type 
     throw std::runtime_error("Unknown expression type");
