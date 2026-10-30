@@ -477,9 +477,9 @@ Lexer reaches the end of the .txt file and returns a vector of Token objects (ve
 ### Parser:
 main.cpp calls the Parser (Parser.h, Parser.cpp) to examine vector<Token> returned by the Lexer. 
 
-Parser sets the currentScope to GlobalScope. GlobalScope is also an expression, ScopeExpr (Expr.h). This means that it has a body which is a vector of Expr. The Parser starts parsing vector<Token> and add it to the body of GlobalScope. 
+Parser sets the currentScope to globalScope. globalScope is also an expression, ScopeExpr (Expr.h). This means that it has a body which is a vector of Expr. The Parser starts parsing vector<Token> and add it to the body of globalScope. 
 
-When the Parser see a specific combination of Token and calls a parse helper function
+When the Parser see a specific combination of Token, it calls a parse helper function.
 
 #### Normal Declaration: 
 - Parser calls a PARSE_DECLARATION function (eg. ParseVarDec, ParseList) when seeing a declaration. The PARSE_DECLARATION function returns a specific Expr (Expr.h). 
@@ -488,7 +488,7 @@ When the Parser see a specific combination of Token and calls a parse helper fun
 - This new SymbolEntry is stored in the currentScope symbol table. The newly created Expr VarDecExpr is added to the Parser's vector of Expr
 
 #### New Scope Declaration (eg. functions, classes, if, while):
-- Note: ScopeExpr stores a vector of expression (similar to )
+- Note: ScopeExpr stores a vector of expression as its body (similar to globalScope) 
 - Follows the same concept as above but returns ScopeExpr (eg. FunctionDecExpr (Expr.h)). For example, parsing the following function in the globalScope:
 ```
 FUNCTION Vnum DECELERATE Vnum speed1 | Vnum x:
