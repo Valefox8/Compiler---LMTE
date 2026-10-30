@@ -96,7 +96,7 @@ enum class TokenType
     Protected,  // "protected" access modifier
     Arrow, // "->" for calling methods and reading attributes on an object
 
-    // USE LATER 
+    // Use for symbol table
     Custom,
     List,
     Nothing, // Return type of a function that doesnt leave anything (like SELF)

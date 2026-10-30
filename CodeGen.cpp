@@ -402,6 +402,7 @@ std::string CodeGen::GenCode(Expr* expr){
 
         return result;  // Returns and constructs the assignement with the name, equals sign and value we just got
     }
+
     // Say becomes a print and the value written within print
     if (SayExpr* say = dynamic_cast<SayExpr*>(expr))
     {

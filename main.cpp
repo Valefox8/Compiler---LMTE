@@ -50,8 +50,9 @@ int main()
     // generates the trees for each line of the program
     std::unique_ptr<ScopeExpr> globalScope = parser.ParseProgram();
 
+    // REMOVE THESE 3 LINES IF YOU WANT TO SEE ALL THE PARSED CODE.
+    // Optimise by removing unused declarations
     Optimiser obtimiser;
-
     obtimiser.MarkReachableScope(globalScope.get());
     obtimiser.Sweep(*globalScope);
 

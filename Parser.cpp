@@ -690,9 +690,17 @@ std::unique_ptr<FunctionDecExpr> Parser::ParseFunctionDec(SymbolKind symK, Token
     Token function = Advance(); 
     std::string name = function.Value;
 
+
+
     // Create new expression and adding to symbol table
     bool isMethod = (symK == SymbolKind::Method) ? true : false;
-    if (name == "SELF" && isMethod) access = TokenType::Public;
+    if (name == "SELF" && isMethod) 
+    {
+        if (returnType != TokenType::Nothing){
+            throw std::runtime_error("Constructors: " + name +"CANT have return type and  at line: " + std::to_string(Current().LineUsed));
+        }
+        access = TokenType::Public;
+    }
     std::unique_ptr<FunctionDecExpr> newFuncDecExpr = std::make_unique<FunctionDecExpr>(name, isMethod, returnType, currentScope, access); 
     std::unique_ptr<SymbolEntry> newEntry =  std::make_unique<SymbolEntry>
         (name, returnType, symK, newFuncDecExpr.get(), access, function.LineUsed);
@@ -1011,8 +1019,11 @@ std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(ClassDecExpr* parentClass){ 
         }
 
         // Parsing the constructor.
-        if (currentType == TokenType::Function && Peek().Value == "SELF")
+        if (currentType == TokenType::Function)
         {
+            if (Peek().Value != "SELF"){
+                throw std::runtime_error("Only 'SELF' is allowed to be declare here. Constructors: " + Peek().Value +"CANT have return type and  at line: " + std::to_string(Current().LineUsed));
+            }
             std::unique_ptr<FunctionDecExpr> classMethodExpr = ParseFunctionDec(SymbolKind::Method, TokenType::Public);
             newClassDecExpr->Body.push_back(std::move(classMethodExpr));
             continue;
@@ -1042,7 +1053,8 @@ std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(ClassDecExpr* parentClass){ 
     }
 
     // ALL CLASSES MUST HAVE A CONSTRUCTOR NO MATTER WHAT!!!!!!
-    if (!newClassDecExpr->ContainLocal("SELF"))
+    bool checkSELF = newClassDecExpr->ContainLocal("SELF");
+    if (!checkSELF)
     {
         std::vector<std::unique_ptr<ParameterExpr>> emptyPara; 
         std::unique_ptr<FunctionDecExpr> emptyConstructor = std::make_unique<FunctionDecExpr>("SELF", true, TokenType::Nothing, newClassDecExpr.get(), TokenType::Public);
@@ -1050,6 +1062,10 @@ std::unique_ptr<ClassDecExpr> Parser::ParseClassDec(ClassDecExpr* parentClass){ 
         emptyConstructor->Param = std::move(emptyPara);
         newClassDecExpr->Body.push_back(std::move(emptyConstructor));
         newClassDecExpr->Insert("SELF", std::move(newEntry));
+    }
+
+    if (!checkSELF && parentClass) {
+        throw std::runtime_error("Children classes: "+ className + " MUST have a constructor  at line " + std::to_string(Current().LineUsed));
     }
 
     Advance(); // Move past the class's ';'
@@ -1124,6 +1140,7 @@ std::unique_ptr<ObjectDecExpr> Parser::ParseObjectDec()// Parses 'CName obj = CN
     return newObjDecExpr;
 }; 
 
+// Print funcition
 std::unique_ptr<SayExpr> Parser::ParseSay(){
     Advance();      // Move past say
     std::unique_ptr<Expr> value = ParseExpression();                // Get the expr for printing
