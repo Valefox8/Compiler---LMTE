@@ -27,6 +27,111 @@ Token Parser::Peek(size_t pos = 1){
 }
 
 
+// Parse each statement/line of code in the program
+std::unique_ptr<Expr> Parser::ParseStatement(){
+
+    TokenType current = Current().Type;     // Gets the current token type 
+
+    if (
+        current == TokenType::Vnum || 
+        current == TokenType::Vwords || 
+        current == TokenType::Vboolean || 
+        current == TokenType::Vletter || 
+        current == TokenType::VCharacter || 
+        current == TokenType::VDigit
+    )  // If the token type is a type identifier, call variable declaration
+    {
+        return ParseVarDec();
+    }
+
+    if (current == TokenType::Say)
+    {
+        return ParseSay();
+    }
+
+    if (current == TokenType::Forwhencake)
+    {   
+        return ParseIteration();
+    }
+
+    if (current == TokenType::Handbrake)      // break statement
+    {   
+        if(inWhile == true){
+            return ParseBreak();
+        }
+        else{
+            throw std::runtime_error("Invalid Syntax: Handbrake at line " + std::to_string(Current().LineUsed));
+        }
+    }
+
+    // Pretty big change !!!!!!!!!!!!!!
+    if (current == TokenType::IguessIf)
+    {
+        return ParseConditionalStatementStructure();
+    }
+
+
+    if (current == TokenType::Function)   // Function declaration
+    {
+        return ParseFunctionDec(SymbolKind::Function);
+    }
+
+    if (current == TokenType::Leave)      // Return statement
+    {
+        return ParseReturn();
+    }
+
+    // Attribute declaration
+    if (
+        current == TokenType::Public || 
+        current == TokenType::Private || 
+        current == TokenType::Protected
+    )   
+    {
+        return ParseAttributeDec();
+    }
+
+    // Make it so that only identifier starts and ends with 'C' is a class expression
+    if (
+        current == TokenType::Identifier && 
+        Current().Value[0] == 'C' && 
+        Current().Value.back() == 'C'
+    ) 
+    {
+        if (Peek().Type == TokenType::Colon && Peek(2).Value == "WithTheClassic") return ParseInheritance();
+        if (Peek().Type == TokenType::Colon) return ParseClassDec();
+        if (Peek().Type == TokenType::Identifier) return ParseObjectDec();
+    }
+
+    std::unique_ptr<Expr> expr = ParseExpression(); // Could be an expression, or the target of an assignment
+    if (Current().Type == TokenType::Equals) // It was a target, so this is a reassignment
+    {
+        IdentifierExpr* idExpr = dynamic_cast<IdentifierExpr*>(expr.get());
+        AttReferenceExpr* attExpr = dynamic_cast<AttReferenceExpr*>(expr.get());
+        if (!idExpr && !attExpr) {
+            throw std::runtime_error("You cannot assign to that at line " + std::to_string(Current().LineUsed));
+        }
+        Advance(); // Move past the '='
+
+        std::unique_ptr<Expr> value = ParseExpression(); // The new value
+
+        TokenType varType;
+        if (idExpr) {
+            SymbolEntry* symbol = currentScope->LookUp(idExpr->Name);
+            if (VarDecExpr* usedExpr = dynamic_cast<VarDecExpr*>(symbol->Expression)) CheckVarDecUsage(value.get(), usedExpr);
+            varType = symbol->Type;
+        } else {
+            varType = attExpr->Type;
+        }            
+
+        CheckType(varType, value.get(), "Variable");
+        return std::make_unique<AssignExpr>(std::move(expr), std::move(value));
+    }
+    
+    return expr;
+}
+
+
 // These follow production rules
 //AddOperator -> add | sub
 //MulOperator -> mul | div | mod 
@@ -205,122 +310,106 @@ std::unique_ptr<Expr> Parser::ParseComparisonOperator(){
     return left;
 }
 
-
-// Creating the parse tree
-// This is global scope
-std::unique_ptr<ScopeExpr> Parser::ParseProgram(){
-    while (Current().Type != TokenType::EndOfFile)
+// Turns a type token into its name for error messages
+static std::string TypeName(TokenType type){
+    switch (type)
     {
-        GlobalScope->Name = "Global Scope";
-        GlobalScope->Body.push_back(ParseStatement());   // changed from ParseExpression() so we can use statements too
+        case TokenType::Vnum:       return "Vnum";
+        case TokenType::Vwords:     return "Vwords";
+        case TokenType::Vboolean:   return "Vboolean";
+        case TokenType::Vletter:    return "Vletter";
+        case TokenType::VCharacter: return "VCharacter";
+        case TokenType::VDigit:     return "VDigit";
+        case TokenType::List:       return "List";
+        default:                    return "unknown";
     }
-    return std::move(GlobalScope);
 }
 
-// Parse each statement/line of code in the program
-std::unique_ptr<Expr> Parser::ParseStatement(){
+// Works out the type of an expression so it can be compared with a parameter type
+// Returns TokenType::Custom when the type can't be known yet (function return values, list.at)
+TokenType Parser::GetExprType(Expr* expr){
+    if (dynamic_cast<NumberExpr*>(expr))    return TokenType::Vnum;
+    if (dynamic_cast<WordExpr*>(expr))      return TokenType::Vwords;
+    if (dynamic_cast<LetterExpr*>(expr))    return TokenType::Vletter;
+    if (dynamic_cast<BooleanExpr*>(expr))   return TokenType::Vboolean;
+    if (dynamic_cast<CharacterExpr*>(expr)) return TokenType::VCharacter;
+    if (dynamic_cast<DigitExpr*>(expr))     return TokenType::VDigit;
+    if (dynamic_cast<ListSizeExpr*>(expr))  return TokenType::Vnum;
 
-    TokenType current = Current().Type;     // Gets the current token type 
-
-    if (
-        current == TokenType::Vnum || 
-        current == TokenType::Vwords || 
-        current == TokenType::Vboolean || 
-        current == TokenType::Vletter || 
-        current == TokenType::VCharacter || 
-        current == TokenType::VDigit
-    )  // If the token type is a type identifier, call variable declaration
+    if (BinaryExpr* binary = dynamic_cast<BinaryExpr*>(expr))
     {
-        return ParseVarDec();
-    }
+        if (
+            binary->Operator == TokenType::Add || 
+            binary->Operator == TokenType::Sub ||
+            binary->Operator == TokenType::Mul || 
+            binary->Operator == TokenType::Div || 
+            binary->Operator == TokenType::Mod
+        ) {
+            TokenType left = GetExprType(binary->Left.get());
+            TokenType right = GetExprType(binary->Right.get());
 
-    if (current == TokenType::Say)
-    {
-        return ParseSay();
-    }
-
-    if (current == TokenType::Forwhencake)
-    {   
-        return ParseIteration();
-    }
-
-    if (current == TokenType::Handbrake)      // break statement
-    {   
-        if(inWhile == true){
-            return ParseBreak();
+            if (left != TokenType::Vnum && left != TokenType::VDigit && left != TokenType::Custom) return left;
+            if (right != TokenType::Vnum && right != TokenType::VDigit && right != TokenType::Custom) return right;
+            return TokenType::Vnum;
         }
-        else{
-            throw std::runtime_error("Invalid Syntax: Handbrake at line " + std::to_string(Current().LineUsed));
-        }
+
+        return TokenType::Vboolean;
     }
 
-    // Pretty big change !!!!!!!!!!!!!!
-    if (current == TokenType::IguessIf)
+    // Return type is saved in the symbol table of the scope it was declared in
+    if (FunctionCallExpr* call = dynamic_cast<FunctionCallExpr*>(expr))
     {
-        return ParseConditionalStatementStructure();
+        FunctionDecExpr* function = call->FuncDecExpr;
+        return currentScope->LookUp(function->Name)->Type;
     }
 
-
-    if (current == TokenType::Function)   // Function declaration
+    // Attribute like speed. Dont need to check symbol table because ParseAttributeReference() already do so 
+    if (AttReferenceExpr* attRef = dynamic_cast<AttReferenceExpr*>(expr))
     {
-        return ParseFunctionDec(SymbolKind::Function);
+        return attRef->Type;
     }
 
-    if (current == TokenType::Leave)      // Return statement
+    if (IdentifierExpr* identifier = dynamic_cast<IdentifierExpr*>(expr))
     {
-        return ParseReturn();
+        return currentScope->LookUp(identifier->Name)->Type; // Normal variable or parameter
     }
 
-    // Attribute declaration
-    if (
-        current == TokenType::Public || 
-        current == TokenType::Private || 
-        current == TokenType::Protected
-    )   
+    return TokenType::Custom; // Function calls and list.at dont have a known type yet
+}
+
+// Throws an error if the value is not the right type
+void Parser::CheckType(TokenType wanted, Expr* value, std::string what){
+    AskExpr* ask = dynamic_cast<AskExpr*>(value);
+    if (ask)
     {
-        return ParseAttributeDec();
-    }
-
-    // Make it so that only identifier starts and ends with 'C' is a class expression
-    if (
-        current == TokenType::Identifier && 
-        Current().Value[0] == 'C' && 
-        Current().Value.back() == 'C'
-    ) 
-    {
-        if (Peek().Type == TokenType::Colon && Peek(2).Value == "WithTheClassic") return ParseInheritance();
-        if (Peek().Type == TokenType::Colon) return ParseClassDec();
-        if (Peek().Type == TokenType::Identifier) return ParseObjectDec();
-    }
-
-    std::unique_ptr<Expr> expr = ParseExpression(); // Could be an expression, or the target of an assignment
-    if (Current().Type == TokenType::Equals) // It was a target, so this is a reassignment
-    {
-        IdentifierExpr* idExpr = dynamic_cast<IdentifierExpr*>(expr.get());
-        AttReferenceExpr* attExpr = dynamic_cast<AttReferenceExpr*>(expr.get());
-        if (!idExpr && !attExpr) {
-            throw std::runtime_error("You cannot assign to that at line " + std::to_string(Current().LineUsed));
-        }
-        Advance(); // Move past the '='
-
-        std::unique_ptr<Expr> value = ParseExpression(); // The new value
-
-        TokenType varType;
-        if (idExpr) {
-            SymbolEntry* symbol = currentScope->LookUp(idExpr->Name);
-            if (VarDecExpr* usedExpr = dynamic_cast<VarDecExpr*>(symbol->Expression)) CheckVarDecUsage(value.get(), usedExpr);
-            varType = symbol->Type;
-        } else {
-            varType = attExpr->Type;
-        }            
-
-        CheckType(varType, value.get(), "Variable");
-        return std::make_unique<AssignExpr>(std::move(expr), std::move(value));
+        ask->Type = wanted;
     }
     
-    return expr;
+    TokenType given = GetExprType(value);
 
+    if (given == TokenType::Nothing)
+    {
+        throw std::runtime_error(what + " should be " + TypeName(wanted) + " but the function doesnt leave anything at line " + std::to_string(Current().LineUsed));
+    }
+
+    bool matches = 
+        given == wanted ||
+        given == TokenType::Custom ||
+        (wanted == TokenType::Vnum && given == TokenType::VDigit);
+
+    // A single digit number can be used as a VDigit
+    NumberExpr* number = dynamic_cast<NumberExpr*>(value);
+    if (wanted == TokenType::VDigit && number && number->Value.length() == 1)
+    {
+        matches = true;
+    }
+
+    if (!matches)
+    {
+        throw std::runtime_error(what + " should be " + TypeName(wanted) + " but got " + TypeName(given) + " at line " + std::to_string(Current().LineUsed));
+    }
 }
+
 
 // Bassically a helper function to make ParseVarDec() shorter.
 std::unique_ptr<Expr> Parser::ParseGetValue(TokenType type){
@@ -386,7 +475,6 @@ std::unique_ptr<VarDecExpr> Parser::CreateAndRegisterVarDec (
 }
 
 
-
 // Follows grammer rule     <VariableDeclaration> ->	<VariableType> Identifier = <Expression>
 std::unique_ptr<VarDecExpr> Parser::ParseVarDec(){
     TokenType varType = Advance().Type;         // Saves the type
@@ -441,37 +529,6 @@ std::unique_ptr<ListExpr> Parser::ParseList(){
     return newListDecExpr;       // returns the expression created
 }
 
-// Follows grammer rule   <ParameterList> -> <Parameter> | <Parameter> '|' <ParameterList> | NOTHING
-std::vector<std::unique_ptr<ParameterExpr>> Parser::ParseParams(){
-    std::vector<std::unique_ptr<ParameterExpr>> params;
-
-    while (Current().Type != TokenType::Colon)   // Read parameters until the scope opens
-    {
-        if (Current().Type == TokenType::EndOfFile)
-        {
-            throw std::runtime_error("Non closed scope: missing ':' at line: " + std::to_string(Current().LineUsed));
-        }
-
-        TokenType paramType = Advance().Type;       // parameter type
-        Token param = Advance();    // parameter name
-        std::string paramName = param.Value;
-
-        std::unique_ptr<ParameterExpr> newParaExpr = std::make_unique<ParameterExpr>(paramName, paramType);
-
-        std::unique_ptr<SymbolEntry> newEntry =  std::make_unique<SymbolEntry>
-            (paramName, paramType, SymbolKind::Parameter, newParaExpr.get(), TokenType::Public, param.LineUsed);
-        currentScope->Insert(paramName, std::move(newEntry));
-
-        params.push_back(std::move(newParaExpr));
-
-        if (Current().Type == TokenType::Separator)   // '|' between parameters
-        {
-            Advance();
-        }
-    }
-
-    return params;
-}
 
 // Reads a whole scope from ':' <StatementList> ';'
 std::vector<std::unique_ptr<Expr>> Parser::ParseBlock(){
@@ -495,6 +552,7 @@ std::vector<std::unique_ptr<Expr>> Parser::ParseBlock(){
 
     return body;
 }
+
 
 std::unique_ptr<IterationExpr> Parser::ParseIteration(){
     Advance(); // Move past 'forwhencake'
@@ -577,6 +635,37 @@ std::unique_ptr<ConditionalStatementStructExpr> Parser::ParseConditionalStatemen
     std::unique_ptr<ConditionalStatementStructExpr> newConStruct=  std::make_unique<ConditionalStatementStructExpr>(std::move(aConditionStatement));
     currentScope->MarkUsed(newConStruct.get());
     return newConStruct;
+}
+// Follows grammer rule   <ParameterList> -> <Parameter> | <Parameter> '|' <ParameterList> | NOTHING
+std::vector<std::unique_ptr<ParameterExpr>> Parser::ParseParams(){
+    std::vector<std::unique_ptr<ParameterExpr>> params;
+
+    while (Current().Type != TokenType::Colon)   // Read parameters until the scope opens
+    {
+        if (Current().Type == TokenType::EndOfFile)
+        {
+            throw std::runtime_error("Non closed scope: missing ':' at line: " + std::to_string(Current().LineUsed));
+        }
+
+        TokenType paramType = Advance().Type;       // parameter type
+        Token param = Advance();    // parameter name
+        std::string paramName = param.Value;
+
+        std::unique_ptr<ParameterExpr> newParaExpr = std::make_unique<ParameterExpr>(paramName, paramType);
+
+        std::unique_ptr<SymbolEntry> newEntry =  std::make_unique<SymbolEntry>
+            (paramName, paramType, SymbolKind::Parameter, newParaExpr.get(), TokenType::Public, param.LineUsed);
+        currentScope->Insert(paramName, std::move(newEntry));
+
+        params.push_back(std::move(newParaExpr));
+
+        if (Current().Type == TokenType::Separator)   // '|' between parameters
+        {
+            Advance();
+        }
+    }
+
+    return params;
 }
 
 // Follows grammer rule   <FunctionDeclaration> -> FUNCTION Identifier <ParameterList>: <StatementList>;
@@ -732,105 +821,6 @@ std::unique_ptr<ReturnExpr> Parser::ParseReturn(){
     return std::make_unique<ReturnExpr>(std::move(value));
 }
 
-// Turns a type token into its name for error messages
-static std::string TypeName(TokenType type){
-    switch (type)
-    {
-        case TokenType::Vnum:       return "Vnum";
-        case TokenType::Vwords:     return "Vwords";
-        case TokenType::Vboolean:   return "Vboolean";
-        case TokenType::Vletter:    return "Vletter";
-        case TokenType::VCharacter: return "VCharacter";
-        case TokenType::VDigit:     return "VDigit";
-        case TokenType::List:       return "List";
-        default:                    return "unknown";
-    }
-}
-
-// Works out the type of an expression so it can be compared with a parameter type
-// Returns TokenType::Custom when the type can't be known yet (function return values, list.at)
-TokenType Parser::GetExprType(Expr* expr){
-    if (dynamic_cast<NumberExpr*>(expr))    return TokenType::Vnum;
-    if (dynamic_cast<WordExpr*>(expr))      return TokenType::Vwords;
-    if (dynamic_cast<LetterExpr*>(expr))    return TokenType::Vletter;
-    if (dynamic_cast<BooleanExpr*>(expr))   return TokenType::Vboolean;
-    if (dynamic_cast<CharacterExpr*>(expr)) return TokenType::VCharacter;
-    if (dynamic_cast<DigitExpr*>(expr))     return TokenType::VDigit;
-    if (dynamic_cast<ListSizeExpr*>(expr))  return TokenType::Vnum;
-
-    if (BinaryExpr* binary = dynamic_cast<BinaryExpr*>(expr))
-    {
-        if (
-            binary->Operator == TokenType::Add || 
-            binary->Operator == TokenType::Sub ||
-            binary->Operator == TokenType::Mul || 
-            binary->Operator == TokenType::Div || 
-            binary->Operator == TokenType::Mod
-        ) {
-            TokenType left = GetExprType(binary->Left.get());
-            TokenType right = GetExprType(binary->Right.get());
-
-            if (left != TokenType::Vnum && left != TokenType::VDigit && left != TokenType::Custom) return left;
-            if (right != TokenType::Vnum && right != TokenType::VDigit && right != TokenType::Custom) return right;
-            return TokenType::Vnum;
-        }
-
-        return TokenType::Vboolean;
-    }
-
-    // Return type is saved in the symbol table of the scope it was declared in
-    if (FunctionCallExpr* call = dynamic_cast<FunctionCallExpr*>(expr))
-    {
-        FunctionDecExpr* function = call->FuncDecExpr;
-        return currentScope->LookUp(function->Name)->Type;
-    }
-
-    // Attribute like speed. Dont need to check symbol table because ParseAttributeReference() already do so 
-    if (AttReferenceExpr* attRef = dynamic_cast<AttReferenceExpr*>(expr))
-    {
-        return attRef->Type;
-    }
-
-    if (IdentifierExpr* identifier = dynamic_cast<IdentifierExpr*>(expr))
-    {
-        return currentScope->LookUp(identifier->Name)->Type; // Normal variable or parameter
-    }
-
-    return TokenType::Custom; // Function calls and list.at dont have a known type yet
-}
-
-// Throws an error if the value is not the right type
-void Parser::CheckType(TokenType wanted, Expr* value, std::string what){
-    AskExpr* ask = dynamic_cast<AskExpr*>(value);
-    if (ask)
-    {
-        ask->Type = wanted;
-    }
-    
-    TokenType given = GetExprType(value);
-
-    if (given == TokenType::Nothing)
-    {
-        throw std::runtime_error(what + " should be " + TypeName(wanted) + " but the function doesnt leave anything at line " + std::to_string(Current().LineUsed));
-    }
-
-    bool matches = 
-        given == wanted ||
-        given == TokenType::Custom ||
-        (wanted == TokenType::Vnum && given == TokenType::VDigit);
-
-    // A single digit number can be used as a VDigit
-    NumberExpr* number = dynamic_cast<NumberExpr*>(value);
-    if (wanted == TokenType::VDigit && number && number->Value.length() == 1)
-    {
-        matches = true;
-    }
-
-    if (!matches)
-    {
-        throw std::runtime_error(what + " should be " + TypeName(wanted) + " but got " + TypeName(given) + " at line " + std::to_string(Current().LineUsed));
-    }
-}
 
 
 // Reads exactly as many arguments as were declared, with a '|' between each.
@@ -1170,4 +1160,16 @@ void Parser::CheckVarDecUsage (Expr* exprUsed, Expr* expr)
     if (FunctionCallExpr* funcCall = dynamic_cast<FunctionCallExpr*>(exprUsed)) {
         currentScope->MarkUsed(expr);
     }
+}
+
+
+// Creating the parse tree
+// This is global scope
+std::unique_ptr<ScopeExpr> Parser::ParseProgram(){
+    while (Current().Type != TokenType::EndOfFile)
+    {
+        GlobalScope->Name = "Global Scope";
+        GlobalScope->Body.push_back(ParseStatement());   // changed from ParseExpression() so we can use statements too
+    }
+    return std::move(GlobalScope);
 }

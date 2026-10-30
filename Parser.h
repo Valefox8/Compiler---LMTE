@@ -71,26 +71,33 @@ class Parser{
     Token Current();                // Returns the token at the position
     Token Advance();                // Returns the position token and increments the position
 
-    // Arithmatic/Boolean helper functions
+    // Main parsing functions
+    std::unique_ptr<Expr> ParseStatement();     // Decides whether its an expression or a variable dec for parsing
+    std::unique_ptr<Expr> ParseExpression();    // Implements the expressions and returns the expression tree
     std::unique_ptr<Expr> ParseTerm();          // Implements the term grammar rule for mul/div/mod tl group them before add/sub
     std::unique_ptr<Expr> ParseFactor();        //  Implements factor grammer rule for numbers, identifiers, etc. Called by parse term
-    std::unique_ptr<Expr> ParseExpression();    // Implements the expressions and returns the expression tree
-    std::unique_ptr<Expr> ParseStatement();     // Decides whether its an expression or a variable dec for parsing
 
-    std::unique_ptr<Expr> ParseComparisonOperator();
     std::unique_ptr<Expr> ParseBooleanOperator();
+    std::unique_ptr<Expr> ParseComparisonOperator();
+
+
+    // Type checker functions
+    TokenType GetExprType(Expr* expr);  // Works out what type an expression gives back
+    void CheckType(TokenType wanted, Expr* value, std::string what); // Throws an error if value isn't the wanted type
+
+
+    // Variable declaration and its helper function
+    std::unique_ptr<Expr> ParseGetValue(TokenType type);            // Get the value from a normal variable declaration
+    std::unique_ptr<VarDecExpr> CreateAndRegisterVarDec(TokenType varType, std::string varName, std::unique_ptr<Expr> nameExpr, SymbolKind kind, ScopeExpr* targetScope, TokenType access = TokenType::Public); 
+        // Adding the new var dec into symbol table and other functions
+    std::unique_ptr<VarDecExpr> ParseVarDec();     // Self explainitory by the name
+
+    // List Declartion functions
+    std::unique_ptr<ListExpr> ParseList();         // also self explanitory by the name
+
 
     // Scope helper functions
     std::vector<std::unique_ptr<Expr>> ParseBlock();               // Reads a whole ': statements ;' scope
-    FunctionDecExpr* CheckParentScope(ScopeExpr* parentscope);
-
-
-    // Funciton helper funciton 
-    std::vector<std::unique_ptr<ParameterExpr>> ParseParams();   // Reads a parameter list up to the ':'
-    std::vector<std::unique_ptr<Expr>> ParseArgs(std::vector<ParameterExpr*> expected, std::string name); // Reads a '|' separated argument list and checks each type
-    std::unique_ptr<FunctionDecExpr> ParseFunctionDec(SymbolKind symK, TokenType access = TokenType::Public);   // Parses a FUNCTION declaration
-    std::unique_ptr<ReturnExpr> ParseReturn();        // Parses a 'leave' statement
-    std::unique_ptr<FunctionCallExpr> ParseFunctionCall(ClassDecExpr* primaryClassDecExpr = nullptr);   // Parses an 'f' function call
 
 
     // Condictional/Iteration helper function
@@ -100,28 +107,21 @@ class Parser{
     std::unique_ptr<ConditionalStatementExpr> ParseConditionalStatement();
 
 
-    // Variable declaration and its helper function
-    std::unique_ptr<Expr> ParseGetValue(TokenType type);            // Get the value from a normal variable declaration
-    std::unique_ptr<VarDecExpr> ParseVarDec();     // Self explainitory by the name
-    std::unique_ptr<VarDecExpr> CreateAndRegisterVarDec(TokenType varType, std::string varName, std::unique_ptr<Expr> nameExpr, SymbolKind kind, ScopeExpr* targetScope, TokenType access = TokenType::Public); 
-        // Adding the new var dec into symbol table and other functions
-
-
-    // Type checker functions
-    TokenType GetExprType(Expr* expr);  // Works out what type an expression gives back
-    void CheckType(TokenType wanted, Expr* value, std::string what); // Throws an error if value isn't the wanted type
-
-    
-    // List Declartion functions
-    std::unique_ptr<ListExpr> ParseList();         // also self explanitory by the name
+    // Funciton helper funciton 
+    std::vector<std::unique_ptr<ParameterExpr>> ParseParams();   // Reads a parameter list up to the ':'
+    std::unique_ptr<FunctionDecExpr> ParseFunctionDec(SymbolKind symK, TokenType access = TokenType::Public);   // Parses a FUNCTION declaration
+    std::unique_ptr<AttReferenceExpr> ParseMethodOverride(std::string name);
+    FunctionDecExpr* CheckParentScope(ScopeExpr* parentscope);
+    std::unique_ptr<ReturnExpr> ParseReturn();        // Parses a 'leave' statement
+    std::vector<std::unique_ptr<Expr>> ParseArgs(std::vector<ParameterExpr*> expected, std::string name); // Reads a '|' separated argument list and checks each type
+    std::unique_ptr<FunctionCallExpr> ParseFunctionCall(ClassDecExpr* primaryClassDecExpr = nullptr);   // Parses an 'f' function call
 
 
     // Class functions
-    std::unique_ptr<VarDecExpr> ParseAttributeDec();                    // Parses 'public Vnum selfish->x = ...'
     std::unique_ptr<AttReferenceExpr> ParseAttributeReference();        // selfish -> ATTRIBUTES or obj -> ATTRIBUTE 
+    std::unique_ptr<VarDecExpr> ParseAttributeDec();                    // Parses 'public Vnum selfish->x = ...'
     std::unique_ptr<ClassDecExpr> ParseClassDec(ClassDecExpr* parentClass =  nullptr); // Parses class declarations
     std::unique_ptr<ClassDecExpr> ParseInheritance();
-    std::unique_ptr<AttReferenceExpr> ParseMethodOverride(std::string name);
     std::unique_ptr<ObjectDecExpr> ParseObjectDec(); // Parses 'CName obj = CName args'
 
 
@@ -129,10 +129,10 @@ class Parser{
     std::unique_ptr<SayExpr> ParseSay(); // print implementation
     void CheckVarDecUsage (Expr* exprUsed, Expr* recordExpr);       // Helper func, mark if a variable is used
 
+
     public:
     Parser(std::vector<Token> tokens);      // Constructor 
     std::unique_ptr<ScopeExpr> ParseProgram();   // parses for expressions within a program
-
 };
 
 #endif
