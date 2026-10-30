@@ -309,7 +309,47 @@ CMyVehicleC: WithTheClassic CanimalC:
     ;
 ;
 ```
+- Example of multi-level inheritance:
+```
+CanimalandHumanC:
+    public:
+        FUNCTION Vnum DECELERATE Vnum speed1 | Vnum x:
+            say 8
+            leave 8
+        ;
+    ;
+    FUNCTION SELF:
+    ;
+;
 
+
+
+CanimalC: WithTheClassic CanimalandHumanC:
+    public:
+        FUNCTION Vnum DECELERATE Vnum speed1 | Vnum x: TAKEOVER:
+            say 8
+            leave 8
+        ;
+    ;
+    FUNCTION SELF: TAKEOVER CanimalandHumanC -> f SELF:
+    ;
+;
+
+
+
+<!-- Classes -->
+CMyVehicleC: WithTheClassic CanimalC:
+    FUNCTION SELF Vnum speed | Vnum value: TAKEOVER CanimalC -> f SELF:
+    ;
+    public:
+        FUNCTION Vnum DECELERATE Vnum speed1 | Vnum speed2: TAKEOVER CanimalC -> f DECELERATE 3 | 3:
+            say 8
+            leave 8
+        ;
+    ;
+;
+
+```
 #### Object call
 - Users can declare an object using the syntax, and use its attributes or method by:
 ```

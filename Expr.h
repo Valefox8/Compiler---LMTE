@@ -60,10 +60,7 @@ class CheckUsage
 };
 
 class ClassDecExpr;
-class MethodDecExpr;
 class ParameterExpr;
-class ObjectDecExpr;
-class FunctionCallExpr;
 class AttReferenceExpr;
 
 

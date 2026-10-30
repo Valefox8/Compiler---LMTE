@@ -38,7 +38,6 @@ SymbolEntry* ScopeExpr::LookUp(const std::string& varName)
         return ParentScope->LookUp(varName);
     }
 
-    this-> PrintSymbolTable();
     throw std::runtime_error("Cant find variable: " + varName);      
 }
 
@@ -69,7 +68,6 @@ void ScopeExpr::Insert(const std::string& varName, std::unique_ptr<SymbolEntry> 
 {
     if (Table.count(varName) == 1)
     {
-        PrintSymbolTable();
         throw std::runtime_error("Variable already declared: " + varName);
     }
 
