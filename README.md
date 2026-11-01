@@ -404,12 +404,14 @@ Vnum ag2e = ask
 - Implemented in the manner:
   - `<ListName>.size()`
 #### At:
- 
 - At is also an extension on the list extension
 - It returns the value at the index provided from a list
 - Implemented in the manner:
   - `<ListName>.at[Index]`
-
+- While `Index` should be number
+  - Valid: `<ListName>.at[1]`
+  - Not Valid: `Vnum x = 1 <ListName>.at[x]` 
+  
 ## Code Structure/Layout
 The codebase is split into many files that serve their own purpose. This explaination will go through what files are prsenet, the connection between the files and fucntions within.
  
