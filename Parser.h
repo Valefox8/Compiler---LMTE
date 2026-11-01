@@ -105,6 +105,7 @@ class Parser{
     std::unique_ptr<HandbrakeExpr> ParseBreak();
     std::unique_ptr<ConditionalStatementStructExpr> ParseConditionalStatementStructure();
     std::unique_ptr<ConditionalStatementExpr> ParseConditionalStatement();
+    void TokenTypeToString(TokenType chekedTokenType);
 
 
     // Funciton helper funciton 

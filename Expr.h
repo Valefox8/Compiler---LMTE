@@ -231,11 +231,13 @@ class ListAtExpr : public Expr{
     public:
         std::string ListName;
         std::unique_ptr<Expr> Index;
+        TokenType ElementType;
 
-        ListAtExpr(std::string listName, std::unique_ptr<Expr> index)
+        ListAtExpr(std::string listName, std::unique_ptr<Expr> index, TokenType elementType)
         {
             ListName = listName;
             Index = std::move(index);
+            ElementType = elementType;
         }
 };
 

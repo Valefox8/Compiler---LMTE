@@ -77,6 +77,22 @@ guessnot:
     say($Fail List at with operation test$)
 ;
 
+"testMixedList | 1 | #L# | $Words$"
+
+iguessif(testMixedList.at[1] equal #L#):
+    say($Pass Mixed List at test1$)
+;
+guessnot:
+    say($Fail Mixed List at test1$)
+;
+iguessif(testMixedList.at[2] equal $Words$):
+    say($Pass Mixed List at test2$)
+;
+guessnot:
+    say($Fail Mixed List at test2$)
+;
+
+
 <!-- Iteration -->
 forwhencake:
     Vnum y = 0

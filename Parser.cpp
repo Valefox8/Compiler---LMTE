@@ -225,13 +225,24 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
 
     if (token.Type == TokenType::Identifier)    //Check if the token is an identifier
     {
-        Token next_token = Advance();  // Advance position
+        Token next_token = Advance();  // Advance throug
         std::string name = token.Value;     // gets list name
-
+        
         if (Current().Type == TokenType::Dot){
+            Expr* entry;
+            ListExpr* tempEntry;
+            // check whether the list is in the current scope
+            if(currentScope->Contain(name)){
+                entry = currentScope->LookUp(name)->Expression;
+                tempEntry = dynamic_cast<ListExpr*>(entry);
+            }
+            else{
+                throw std::runtime_error("Undeclared Variable: " + name);
+            }
+
             Advance();      // Move on from the '.'
             Token methodToken = Advance();      // Get method
-
+            
             if (methodToken.Value == "size")
             {
                 Advance();      // '('
@@ -242,9 +253,30 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
             if (methodToken.Value == "at")
             {
                 Advance();  // '['
+                
                 std::unique_ptr<Expr> index = ParseExpression();    // gets the value in between the brackets (the at value)
+                
+                TokenType type = GetExprType(index.get());
+                if(type != TokenType::Vnum){
+                    throw std::runtime_error("Not a valid position, expecting Vnum");
+                }
+
+                // check whether position is in the range
+                if (NumberExpr* number = dynamic_cast<NumberExpr*>(index.get())){
+                    int pos = std::stoi(number->Value);
+                    if (pos >= 0 && pos < static_cast<int>(tempEntry->Elements.size())){
+                        // start to get the variable type
+                        type = GetExprType(tempEntry->Elements[pos].get());
+                    }
+                    else{
+                        throw std::runtime_error("Position out of list range");
+                    }
+                }
+                else{
+                    throw std::runtime_error("List index must be a number");
+                }
                 Advance();  // ']'
-                return std::make_unique<ListAtExpr>(name, std::move(index));
+                return std::make_unique<ListAtExpr>(name, std::move(index), type);
             }
             throw std::runtime_error("how did we get here: at line " + std::to_string(next_token.LineUsed)); // TODO: maybe implement print with this?
         }
@@ -283,6 +315,245 @@ std::unique_ptr<Expr> Parser::ParseBooleanOperator(){
     return left;
 }
 
+void Parser::TokenTypeToString(TokenType checkedTokenType)
+{
+    switch (checkedTokenType)
+    {
+        case TokenType::Number:
+            std::cout << "Number";
+            break;
+
+        case TokenType::Identifier:
+            std::cout << "Identifier";
+            break;
+
+        case TokenType::Add:
+            std::cout << "Add";
+            break;
+
+        case TokenType::Sub:
+            std::cout << "Sub";
+            break;
+
+        case TokenType::Mul:
+            std::cout << "Mul";
+            break;
+
+        case TokenType::Div:
+            std::cout << "Div";
+            break;
+
+        case TokenType::Mod:
+            std::cout << "Mod";
+            break;
+
+        case TokenType::LeftParen:
+            std::cout << "LeftParen";
+            break;
+
+        case TokenType::RightParen:
+            std::cout << "RightParen";
+            break;
+
+        case TokenType::EndOfFile:
+            std::cout << "EndOfFile";
+            break;
+
+        case TokenType::Equals:
+            std::cout << "Equals";
+            break;
+
+        case TokenType::Say:
+            std::cout << "Say";
+            break;
+
+        case TokenType::Ask:
+            std::cout << "Ask";
+            break;
+
+        case TokenType::Vnum:
+            std::cout << "Vnum";
+            break;
+
+        case TokenType::Vwords:
+            std::cout << "Vwords";
+            break;
+
+        case TokenType::Vboolean:
+            std::cout << "Vboolean";
+            break;
+
+        case TokenType::Vletter:
+            std::cout << "Vletter";
+            break;
+
+        case TokenType::VCharacter:
+            std::cout << "VCharacter";
+            break;
+
+        case TokenType::VDigit:
+            std::cout << "VDigit";
+            break;
+
+        case TokenType::Real:
+            std::cout << "Real";
+            break;
+
+        case TokenType::Cake:
+            std::cout << "Cake";
+            break;
+
+        case TokenType::IguessIf:
+            std::cout << "IguessIf";
+            break;
+
+        case TokenType::Guessthis:
+            std::cout << "Guessthis";
+            break;
+
+        case TokenType::Guessnot:
+            std::cout << "Guessnot";
+            break;
+
+        case TokenType::Equalto:
+            std::cout << "Equalto";
+            break;
+
+        case TokenType::Lessthan:
+            std::cout << "Lessthan";
+            break;
+
+        case TokenType::Morethan:
+            std::cout << "Morethan";
+            break;
+
+        case TokenType::Istotallydefinitelynotequalto:
+            std::cout << "Istotallydefinitelynotequalto";
+            break;
+
+        case TokenType::Equallessthan:
+            std::cout << "Equallessthan";
+            break;
+
+        case TokenType::Equalmorethan:
+            std::cout << "Equalmorethan";
+            break;
+
+        case TokenType::Dna:
+            std::cout << "Dna";
+            break;
+
+        case TokenType::Ro:
+            std::cout << "Ro";
+            break;
+
+        case TokenType::Forwhencake:
+            std::cout << "Forwhencake";
+            break;
+
+        case TokenType::Handbrake:
+            std::cout << "Handbrake";
+            break;
+
+        case TokenType::Word:
+            std::cout << "Word";
+            break;
+
+        case TokenType::Letter:
+            std::cout << "Letter";
+            break;
+
+        case TokenType::Quote:
+            std::cout << "Quote";
+            break;
+
+        case TokenType::Separator:
+            std::cout << "Separator";
+            break;
+
+        case TokenType::AnotherOne:
+            std::cout << "AnotherOne";
+            break;
+
+        case TokenType::Dot:
+            std::cout << "Dot";
+            break;
+
+        case TokenType::LeftBracket:
+            std::cout << "LeftBracket";
+            break;
+
+        case TokenType::RightBracket:
+            std::cout << "RightBracket";
+            break;
+
+        case TokenType::Comma:
+            std::cout << "Comma";
+            break;
+
+        case TokenType::Colon:
+            std::cout << "Colon";
+            break;
+
+        case TokenType::Semicolon:
+            std::cout << "Semicolon";
+            break;
+
+        case TokenType::Function:
+            std::cout << "Function";
+            break;
+
+        case TokenType::Leave:
+            std::cout << "Leave";
+            break;
+
+        case TokenType::Call:
+            std::cout << "Call";
+            break;
+
+        case TokenType::SELF:
+            std::cout << "SELF";
+            break;
+
+        case TokenType::selfish:
+            std::cout << "selfish";
+            break;
+
+        case TokenType::Public:
+            std::cout << "Public";
+            break;
+
+        case TokenType::Private:
+            std::cout << "Private";
+            break;
+
+        case TokenType::Protected:
+            std::cout << "Protected";
+            break;
+
+        case TokenType::Arrow:
+            std::cout << "Arrow";
+            break;
+
+        case TokenType::Custom:
+            std::cout << "Custom";
+            break;
+
+        case TokenType::List:
+            std::cout << "List";
+            break;
+
+        case TokenType::Nothing:
+            std::cout << "Nothing";
+            break;
+
+        default:
+            std::cout << "Unknown TokenType";
+            break;
+    }
+}
+
+
 // Parsing conditional expression like (eg. x == 5)
 std::unique_ptr<Expr> Parser::ParseComparisonOperator(){
     std::unique_ptr<Expr> left = ParseExpression();
@@ -302,6 +573,11 @@ std::unique_ptr<Expr> Parser::ParseComparisonOperator(){
         CheckVarDecUsage(left.get(), currentScope);
         TokenType rightType = GetExprType(right.get());
         if (leftType != rightType){
+            printf("\n\nlefttype: ");
+            TokenTypeToString(leftType);
+            printf("  righttype: ");
+            TokenTypeToString(rightType);
+            printf("\n\n");
             throw std::runtime_error("Cant do comparison with differnt types at around line " + std::to_string(Current().LineUsed));
         }
         left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
@@ -325,6 +601,10 @@ static std::string TypeName(TokenType type){
     }
 }
 
+TokenType getType(ListAtExpr* elementType){
+        return elementType->ElementType;
+};
+
 // Works out the type of an expression so it can be compared with a parameter type
 // Returns TokenType::Custom when the type can't be known yet (function return values, list.at)
 TokenType Parser::GetExprType(Expr* expr){
@@ -335,6 +615,8 @@ TokenType Parser::GetExprType(Expr* expr){
     if (dynamic_cast<CharacterExpr*>(expr)) return TokenType::VCharacter;
     if (dynamic_cast<DigitExpr*>(expr))     return TokenType::VDigit;
     if (dynamic_cast<ListSizeExpr*>(expr))  return TokenType::Vnum;
+    if (ListAtExpr* listAt = dynamic_cast<ListAtExpr*>(expr)) return getType(listAt);
+    
 
     if (BinaryExpr* binary = dynamic_cast<BinaryExpr*>(expr))
     {
