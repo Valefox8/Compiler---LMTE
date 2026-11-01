@@ -597,4 +597,224 @@ Each Expr triggers a differnt functionality of GenCode, and returns a string whi
 
 main.cpp then writes the resulting string to the python file, then save it.
 
+## Test Programs
+The following two test programs test the full functionality of the language. 
+Test Program 1 covers the core basics such as variables, arithmetic, lists etc. Test
+Program 2 covers extended functionality including but classes, objects and inheritance.
+Each section prints "== heading ==" to make it clear where the output begins for the 
+code.
 
+### Test Program 1: Core language
+```
+<!-- Test Program 1: core language features -->
+
+<!-- 1. Variables: one of every type -->
+say $== Variables ==$
+Vwords greeting = $Welcome to RandomGibberish$
+Vletter grade = #A#
+VCharacter initial = R
+VDigit numbers = 7
+Vboolean running = real
+Vnum unused = 999 <!-- never used, so the optimiser removes it -->
+
+say greeting
+say grade
+say initial
+say numbers
+say running
+
+<!-- 2. Arithmetic: brackets before mul/div/mod, mul/div/mod before add/sub -->
+say $== Arithmetic ==$
+Vnum a = 10
+Vnum b = 3
+Vnum total = a add b mul 2
+Vnum grouped = (a add b) mul 2
+say total
+say grouped
+say a sub b
+say a mod b
+say a div 4
+say numbers add 3
+
+<!-- 3. Lists: dynamic, can mix types, .size() and .at[] -->
+say $== Lists ==$
+"scores | 90 | 75 | 60 add 5"
+"mixed | 1 | #B# | $three$"
+say scores.size()
+say scores.at[2]
+say mixed.at[1]
+say mixed.at[2]
+
+<!-- 4. Conditionals with comparison and boolean operators -->
+say $== Conditionals ==$
+iguessif(total lessThan 10):
+    say $total is small$
+;
+guessthis(total equalMoreThan 10 dna total equalLessThan 20):
+    say $total is medium$
+;
+guessnot:
+    say $total is large$
+;
+
+iguessif(a mod b isTotallyDefinitelyNotEqualTo 0 ro cake):
+    say $10 is not divisible by 3$
+;
+
+Vboolean bigTotal = (total moreThan grouped)
+iguessif(bigTotal):
+    say $total is bigger than grouped$
+;
+guessnot:
+    say $total is not bigger than grouped$
+;
+
+iguessif(scores.size() equal 3 dna greeting isTotallyDefinitelyNotEqualTo $Bye$):
+    say $scores has 3 items and greeting is not Bye$
+;
+
+<!-- 5. Iteration: forwhencake loops forever until handbrake -->
+say $== Loops ==$
+Vnum countdown = 3
+Vboolean liftoff = cake
+forwhencake:
+    iguessif(countdown equal 0):
+        liftoff = real
+        handbrake
+    ;
+    say countdown
+    countdown = countdown sub 1
+;
+iguessif(liftoff):
+    say $Liftoff$
+;
+
+Vnum row = 1
+forwhencake:
+    iguessif(row moreThan 2):
+        handbrake
+    ;
+    Vnum col = 1
+    forwhencake:
+        iguessif(col moreThan 3):
+            handbrake
+        ;
+        say row mul col
+        col = col add 1
+    ;
+    row = row add 1
+;
+
+<!-- 6. Functions: typed parameters split by |, leave returns a value -->
+say $== Functions ==$
+FUNCTION Vnum addUp Vnum x | Vnum y:
+    Vnum result = x add y
+    leave result
+;
+
+FUNCTION Vnum square Vnum x:
+    leave x mul x
+;
+
+<!-- Calls another function. Brackets keep each call's arguments separate -->
+FUNCTION Vnum sumOfSquares Vnum x | Vnum y:
+    leave (f square x) add (f square y)
+;
+
+<!-- Recursion -->
+FUNCTION Vnum factorial Vnum n:
+    iguessif(n equalLessThan 1):
+        leave 1
+    ;
+    leave n mul f factorial n sub 1
+;
+
+FUNCTION Vwords rate Vnum score:
+    iguessif(score moreThan 80):
+        leave $excellent$
+    ;
+    guessthis(score moreThan 50):
+        leave $passing$
+    ;
+    guessnot:
+        leave $failing$
+    ;
+;
+
+<!-- No return type, so it is called as a statement -->
+FUNCTION greet Vwords name:
+    say $Hello, $ add name
+;
+
+<!-- Never called, so the optimiser leaves it out of python.py -->
+FUNCTION Vnum neverCalled Vnum z:
+    leave z mul 100
+;
+
+Vnum added = f addUp 4 | 5
+say added
+say f sumOfSquares 3 | 4
+say f factorial 5
+say f rate scores.at[0]
+say f rate scores.at[1]
+f greet $Dennis$
+
+<!-- 7. Input: ask reads a value of the declared type -->
+say $== Input ==$
+say $Enter a whole number:$
+Vnum userNumber = ask
+say $Factorial:$
+say f factorial userNumber
+```
+
+**Expected output.** When the program asks for a number, type a number and you will 
+receive the factorial.
+
+```
+== Variables ==
+Welcome to RandomGibberish
+A
+R
+7
+True
+== Arithmetic ==
+16
+26
+7
+1
+2.5
+10
+== Lists ==
+3
+65
+B
+three
+== Conditionals ==
+total is medium
+10 is not divisible by 3
+total is not bigger than grouped
+scores has 3 items and greeting is not Bye
+== Loops ==
+3
+2
+1
+Liftoff
+1
+2
+3
+2
+4
+6
+== Functions ==
+9
+25
+120
+excellent
+passing
+Hello, Jack
+== Input ==
+Enter a whole number:
+4
+Factorial:
+24
+```
