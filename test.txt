@@ -1,3 +1,237 @@
+<!-- Variable Declaration -->
+Vnum num = 312
+Vboolean bl = real
+Vletter le = #L#
+Vwords wd = $Words$
+VCharacter ct = a
+VDigit di = 1
+
+<!-- Test operations -->
+num = 1
+Vnum zero = 0
+Vnum num2 = 2
+Vnum result = 0
+
+result = num add num2
+iguessif(result equal 3):
+    say($Pass add test$)
+;
+guessnot:
+    say($Fail add test$)
+;
+
+result = num2 sub num
+iguessif(result equal 1):
+    say($Pass sub test$)
+;
+guessnot:
+    say($Fail sub test$)
+;
+
+result = num mul num2
+iguessif(result equal 2):
+    say($Pass mul test$)
+;
+guessnot:
+    say($Fail mul test$)
+;
+
+result = num2 div num
+iguessif(result equal 2):
+    say($Pass div test$)
+;
+guessnot:
+    say($Fail div test$)
+;
+
+result = num mod num2
+iguessif(result equal 2):
+    say($Pass mod test$)
+;
+guessnot:
+    say($Fail mod test$)
+;
+
+say($pass variable declaration test$)
+
+<!-- Test List -->
+"testList | 1 | 2 | 1 add 2"
+iguessif(testList.size() equal 3):
+    say($Pass List size test$)
+;
+guessnot:
+    say($Fail List size test$)
+;
+
+iguessif(testList.at[0] equal 1):
+    say($Pass List at test$)
+;
+guessnot:
+    say($Fail List at test$)
+;
+
+iguessif(testList.at[2] equal 3):
+    say($Pass List at with operation test$)
+;
+guessnot:
+    say($Fail List at with operation test$)
+;
+
+<!-- Iteration -->
+forwhencake:
+    Vnum y = 0
+    iguessif(y equal 10):
+        forwhencake:
+            Vnum z = 0
+            iguessif(z moreThan 5):
+                handbrake
+            ;
+        ;
+    ;
+;
+
+say($Pass iteration test$)
+
+<!-- Conditional Statements -->
+<!-- Basic test -->
+num = 10
+iguessif(num equalMoreThan 0 dna num equalLessThan 5):
+    say($Fail basic test$)
+;
+guessthis(num moreThan 5 dna num lessThan 10):
+    say($Fail basic test$)
+;
+guessthis(num isTotallyDefinitelyNotEqualTo 10):
+    say($Fail basic test$)
+;
+guessnot:
+    say($Pass basic test$)
+;
+
+<!-- Test real cake condition -->
+iguessif(cake):
+    say($Failed real cake condition$)
+;
+iguessif(real):
+    say($Pass real cake condition$)
+;
+
+<!-- Test declare varaible in scope -->
+iguessif(real):
+    Vnum y = 10
+    num = num add y
+;
+iguessif(num equal 20):
+    say($Pass inscope test$)
+;
+guessnot:
+    say($Faile inscope test$)
+;
+
+<!-- Test Boolean Operator -->
+num = 5
+iguessif(num lessThan 10 dna num moreThan 1):
+    say($Pass and test$)
+;
+guessnot:
+    say($Fail and test$)
+;
+
+iguessif(num equal 5 ro cake):
+    say($Pass or test$)
+;
+guessnot:
+    say($Fail or test$)
+;
+
+<!-- Teast print and input -->
+
+Vnum userIn = ask
+say(userIn)
+
+<!-- Function Test -->
+FUNCTION Vnum adding Vnum num1 | Vnum num2:
+    Vnum result = num1 add num2
+    leave result
+;
+FUNCTION Vnum checkValid Vboolean valid:
+    iguessif(valid):
+        Vnum result = f adding 10 | 10
+        leave result
+    ;
+    guessnot:
+        leave 0
+    ;
+;
+
+say($Pass Function Creation test$)
+
+num = 1
+num2 = 2
+result = f adding num | num2
+iguessif(result equal 3):
+    say($Pass function call with variables$)
+;
+guessnot:
+    say($Fail function call with variables$)
+;
+
+result = f adding 5 | 10
+iguessif(result equal 15):
+    say($Pass function call with values$)
+;
+guessnot:
+    say($Fail function call with values$)
+;
+
+result = f checkValid real
+iguessif(result equal 20):
+    say($Pass nested function call 1$)
+;
+guessnot:
+    say($Fail nested function call 1$)
+;
+
+result = f checkValid cake
+iguessif(result equal 0):
+    say($Pass nested function call 2$)
+;
+guessnot:
+    say($Fail nested function call 2$)
+;
+
+<!-- Test Classes -->
+CTestClassC:
+    public:
+        FUNCTION SELF Vnum fixedNumber:
+            public Vnum selfish -> fixedNumber = fixedNumber
+            private Vnum selfish -> innerNumber = 10
+        ;
+
+        FUNCTION Vnum Adding Vnum num1:
+            leave num1 add selfish -> fixedNumber
+        ;
+    ;
+
+    private:
+        FUNCTION Vnum PrivateFunction Vnum num1:
+	    say($In Private Function Rightnow$)
+            Vnum result = selfish -> f Adding num1
+            result = result add selfish -> innerNumber
+            leave result
+        ;
+    ;
+
+    public:
+        FUNCTION Vnum TestPrivate Vnum num1:
+            Vnum result = selfish -> f PrivateFunction num1
+            leave result
+        ;
+    ;
+;
+
+<!-- Test Class Inheritance  -->
+
 CanimalandHumanC:
     public:
         FUNCTION Vnum DECELERATE Vnum speed1 | Vnum x:
@@ -9,8 +243,6 @@ CanimalandHumanC:
     ;
 ;
 
-
-
 CanimalC: WithTheClassic CanimalandHumanC:
     public:
         FUNCTION Vnum DECELERATE Vnum speed1 | Vnum x: TAKEOVER:
@@ -21,8 +253,6 @@ CanimalC: WithTheClassic CanimalandHumanC:
     FUNCTION SELF: TAKEOVER CanimalandHumanC -> f SELF:
     ;
 ;
-
-
 
 <!-- Classes -->
 CMyVehicleC: WithTheClassic CanimalC:
@@ -36,8 +266,28 @@ CMyVehicleC: WithTheClassic CanimalC:
     ;
 ;
 
-<!-- Reassignment -->
+say($Class Created Successfully$)
 
-<!-- Objects -->
+CTestClassC testcase = CTestClassC 5
+say($Pass Class declaration test$)
+
+num = 3
+
+result = testcase -> f Adding num
+iguessif(result equal 8):
+    say($Pass public function test$)
+;
+guessnot:
+    say($Fail public function test$)
+;
+
+result = testcase -> f TestPrivate num
+iguessif(result equal 18):
+    say($Pass private function test$)
+;
+guessnot:
+    say($Fail private function test$)
+;
+
 CMyVehicleC eee = CMyVehicleC 3 | 10
 eee -> f DECELERATE 3 | 3
