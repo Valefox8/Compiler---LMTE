@@ -41,6 +41,38 @@ SymbolEntry* ScopeExpr::LookUp(const std::string& varName)
     throw std::runtime_error("Cant find variable: " + varName);      
 }
 
+VarDecExpr* ScopeExpr::LookUpClassAttribute(AttReferenceExpr* att)
+{
+    IdentifierExpr* classAtt = dynamic_cast<IdentifierExpr*>(att->Attribute.get());
+    if (!classAtt){
+        return nullptr;
+    }
+
+    SymbolEntry* objSymbol = LookUp(att->Primary->Name);
+    ClassDecExpr* classDec;
+
+    if (ClassDecExpr* insideClassDec = dynamic_cast<ClassDecExpr*>(objSymbol->Expression)){
+        classDec = insideClassDec;
+    } else if (ObjectDecExpr* objDec = dynamic_cast<ObjectDecExpr*>(objSymbol->Expression)){
+        classDec = objDec->ClassDefExpr;
+    } 
+
+    if (!classDec){
+        return nullptr;
+    }
+
+    
+    SymbolEntry* attDecSymbol = classDec->LookUpLocal(classAtt->Name);
+    VarDecExpr* attDec = dynamic_cast<VarDecExpr*>(attDecSymbol->Expression);
+    if (!attDec){
+        return nullptr;
+    }
+
+    return attDec;
+}
+
+
+
 // Return an entry to the symbol table from current scope
 // Is also a way to check if a symbol was added or not 
 SymbolEntry* ClassDecExpr::LookUpLocal(const std::string& varName)

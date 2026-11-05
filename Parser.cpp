@@ -49,6 +49,7 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
         return ParseSay();
     }
 
+
     if (current == TokenType::Forwhencake)
     {   
         return ParseIteration();
@@ -106,25 +107,36 @@ std::unique_ptr<Expr> Parser::ParseStatement(){
     std::unique_ptr<Expr> expr = ParseExpression(); // Could be an expression, or the target of an assignment
     if (Current().Type == TokenType::Equals) // It was a target, so this is a reassignment
     {
-        IdentifierExpr* idExpr = dynamic_cast<IdentifierExpr*>(expr.get());
-        AttReferenceExpr* attExpr = dynamic_cast<AttReferenceExpr*>(expr.get());
-        if (!idExpr && !attExpr) {
-            throw std::runtime_error("You cannot assign to that at line " + std::to_string(Current().LineUsed));
+        // Checking if the primary variable is defined 
+        VarDecExpr* targetVarDec;
+        if (IdentifierExpr* idExpr = dynamic_cast<IdentifierExpr*>(expr.get())){
+            SymbolEntry* symbol = currentScope->LookUp(idExpr->Name);
+            VarDecExpr* varDec = dynamic_cast<VarDecExpr*>(symbol->Expression);
+            if (!varDec){
+                throw std::runtime_error("Only normal variables or attributes can be reassigned at line:" + std::to_string(Current().LineUsed));
+            }
+            targetVarDec = varDec;
         }
-        Advance(); // Move past the '='
 
+        // Checking if the primary attribute is defined 
+        if (AttReferenceExpr* attExpr = dynamic_cast<AttReferenceExpr*>(expr.get())){
+            VarDecExpr* varDec = currentScope->LookUpClassAttribute(attExpr);
+            if (!currentScope->LookUpClassAttribute(attExpr)){
+                throw std::runtime_error("Only normal attributes can be reassigned at line:" + std::to_string(Current().LineUsed));
+            }
+            targetVarDec = varDec;
+        }
+
+        // If its not a normal variable or attribute, throw an error
+        if (!targetVarDec){
+            throw std::runtime_error("Cant not assign at line:" + std::to_string(Current().LineUsed));
+        }
+
+        Advance(); // Move past the '='
         std::unique_ptr<Expr> value = ParseExpression(); // The new value
 
-        TokenType varType;
-        if (idExpr) {
-            SymbolEntry* symbol = currentScope->LookUp(idExpr->Name);
-            if (VarDecExpr* usedExpr = dynamic_cast<VarDecExpr*>(symbol->Expression)) CheckVarDecUsage(value.get(), usedExpr);
-            varType = symbol->Type;
-        } else {
-            varType = attExpr->Type;
-        }            
-
-        CheckType(varType, value.get(), "Variable");
+        CheckVarDecUsage(value.get(), targetVarDec);
+        CheckType(targetVarDec->VarType, value.get(), "Variable");
         return std::make_unique<AssignExpr>(std::move(expr), std::move(value));
     }
     
@@ -169,11 +181,6 @@ std::unique_ptr<Expr> Parser::ParseTerm(){
 std::unique_ptr<Expr> Parser::ParseFactor(){
     Token token = Current();    // Get current token
 
-    if (token.Type == TokenType::Quote)                          // Check if its the start of a list
-    {
-        return ParseList();
-    }
-
     if (token.Type == TokenType::Ask)
     {
         Advance();
@@ -213,81 +220,39 @@ std::unique_ptr<Expr> Parser::ParseFactor(){
         return std::make_unique<BooleanExpr>(true);
     }
 
+    // An attribute reference: object->attribute/function 
     if (token.Type == TokenType::Identifier && Peek().Type == TokenType::Arrow)
     {
+        std::string name = Peek(2).Value;
         SymbolEntry* symbol = currentScope->LookUp(token.Value);
-        if (symbol->SymK == SymbolKind::Object && dynamic_cast<ClassDecExpr*>(symbol->Expression) && symbol->Name != "selfish")
-        {
+        if (symbol->SymK == SymbolKind::Object && dynamic_cast<ClassDecExpr*>(symbol->Expression) && symbol->Name != "selfish") {
             throw std::runtime_error("Static attributes/methods are not implemented yet sorry: " + Current().Value + "; error at line " + std::to_string(Current().LineUsed));
         }
-        return ParseAttributeReference();
-    }
 
-    if (token.Type == TokenType::Identifier)    //Check if the token is an identifier
+        // This may be a list with a dot function
+        std::unique_ptr<AttReferenceExpr> attRef =  ParseAttributeReference();
+        if (currentScope->LookUpClassAttribute(attRef.get())){
+            return ParseListDotFunction(name, std::move(attRef));
+        }
+        return attRef;
+    }
+    
+
+    // If its not an arrow or a dot function then its just a normal variable/parameter
+    if (token.Type == TokenType::Identifier)
     {
         Token next_token = Advance();  // Advance throug
         std::string name = token.Value;     // gets list name
         
-        if (Current().Type == TokenType::Dot){
-            Expr* entry;
-            ListExpr* tempEntry;
-            // check whether the list is in the current scope
-            if(currentScope->Contain(name)){
-                entry = currentScope->LookUp(name)->Expression;
-                tempEntry = dynamic_cast<ListExpr*>(entry);
-            }
-            else{
-                throw std::runtime_error("Undeclared Variable: " + name);
-            }
-
-            Advance();      // Move on from the '.'
-            Token methodToken = Advance();      // Get method
-            
-            if (methodToken.Value == "size")
-            {
-                Advance();      // '('
-                Advance();      // ')'
-                return std::make_unique<ListSizeExpr>(name);    
-            }
-
-            if (methodToken.Value == "at")
-            {
-                Advance();  // '['
-                
-                std::unique_ptr<Expr> index = ParseExpression();    // gets the value in between the brackets (the at value)
-                
-                TokenType type = GetExprType(index.get());
-                if(type != TokenType::Vnum){
-                    throw std::runtime_error("Not a valid position, expecting Vnum");
-                }
-
-                // check whether position is in the range
-                if (NumberExpr* number = dynamic_cast<NumberExpr*>(index.get())){
-                    int pos = std::stoi(number->Value);
-                    if (pos >= 0 && pos < static_cast<int>(tempEntry->Elements.size())){
-                        // start to get the variable type
-                        type = GetExprType(tempEntry->Elements[pos].get());
-                    }
-                    else{
-                        throw std::runtime_error("Position out of list range");
-                    }
-                }
-                else{
-                    throw std::runtime_error("List index must be a number");
-                }
-                Advance();  // ']'
-                return std::make_unique<ListAtExpr>(name, std::move(index), type);
-            }
-            throw std::runtime_error("how did we get here: at line " + std::to_string(next_token.LineUsed)); // TODO: maybe implement print with this?
-        }
-                
-        // If its not an arrow or a dot function then its just a normal variable/parameter
         // Check if its declared
         Expr* identifier = currentScope->LookUp(name)->Expression;
         if (!dynamic_cast<VarDecExpr*>(identifier) && !dynamic_cast<ParameterExpr*>(identifier)) {
             throw std::runtime_error("Undeclared Variable: at line " + std::to_string(next_token.LineUsed) + name );
         }
-        return std::make_unique<IdentifierExpr>(name); // A variable name
+        
+        // This may be a list with a dot function
+        std::unique_ptr<IdentifierExpr> idExpr = std::make_unique<IdentifierExpr>(name); // A variable name
+        return ParseListDotFunction(name, std::move(idExpr));
     }
 
     if (token.Type == TokenType::LeftParen)
@@ -738,15 +703,25 @@ std::unique_ptr<VarDecExpr> Parser::CreateAndRegisterVarDec (
     std::unique_ptr<Expr> nameExpr, 
     SymbolKind kind, 
     ScopeExpr* targetScope,
+    bool isList,
     TokenType access
 ) {
-    Advance();                                  // Move pass '=' 
-    std::unique_ptr<Expr> varValue = ParseGetValue(varType);    // Get var type Expression
-    // Value must be same type as variable declared
-    CheckType(varType, varValue.get(), "Variable '" + varName + "'");
+
+    // Declare new Expression
+    std::unique_ptr<VarDecExpr> newVarDecExpr = std::make_unique<VarDecExpr>(varType, std::move(nameExpr));
+    std::unique_ptr<Expr> varValue;    
+    if (isList){
+        newVarDecExpr->VarType = TokenType::List;
+        varValue = ParseListElements(varType, newVarDecExpr.get());
+        varType = TokenType::List;
+    } else {
+        Advance();
+        varValue = ParseGetValue(varType);
+        CheckType(varType, varValue.get(), "Variable '" + varName + "'");
+    }
+    newVarDecExpr->Value = std::move(varValue);
 
     // Create expression and make new entry to symbol table
-    std::unique_ptr<VarDecExpr> newVarDecExpr = std::make_unique<VarDecExpr>(varType, std::move(nameExpr), std::move(varValue));
     std::unique_ptr<SymbolEntry> newEntry = std::make_unique<SymbolEntry>(varName, varType, kind, newVarDecExpr.get(), access);
     
     // Adding to the current scope syntax table or the accesstor class
@@ -761,54 +736,79 @@ std::unique_ptr<VarDecExpr> Parser::CreateAndRegisterVarDec (
 std::unique_ptr<VarDecExpr> Parser::ParseVarDec(){
     TokenType varType = Advance().Type;         // Saves the type
 
+    bool isList = false;
+    if (Current().Type == TokenType::Quote){
+        Advance();
+        isList = true;
+    }
+
     // Create the expression
     std::string varName = Advance().Value;
     std::unique_ptr<IdentifierExpr> Name = std::make_unique<IdentifierExpr>(varName);
-
-    return CreateAndRegisterVarDec(varType, varName, std::move(Name), SymbolKind::Variable, currentScope);       // returns the expression created
+    return CreateAndRegisterVarDec(varType, varName, std::move(Name), SymbolKind::Variable, currentScope, isList);       // returns the expression created
 }
 
  // List -> '"' Identifier '|' <ElementList> '"'
  //<ElementList>	-> 	<Element> || <Element> ‘|’ <ElementList>
-std::unique_ptr<ListExpr> Parser::ParseList(){
-    Advance();      // Move past the first " 
-
-    Token nameToken = Advance();    // Get the list name and move on
-    std::string name = nameToken.Value;     // Save name as string
-
-    Advance();  // Move past the '|'
-
+std::unique_ptr<ListExpr> Parser::ParseListElements(TokenType type, VarDecExpr* targetVar){
     std::vector<std::unique_ptr<Expr>> elements;    // Create an elements vector
-    elements.push_back(ParseExpression());      // Push first element (should always be at least 1 element)
-    
 
     while (Current().Type == TokenType::Separator)  // Loops for amount of elements in the list
     {
         Advance();   // move past '|'
-        elements.push_back(ParseExpression());   // next element
-        if (Current().Type == TokenType::Quote && Peek().Type == TokenType::AnotherOne)
-        {
-            elements.push_back(ParseList());
-        }
-        else if (Peek().Type == TokenType::Quote && Peek(2).Type != TokenType::AnotherOne)
-            break;
-    }
-
-    if (Current().Type != TokenType::Quote)
-    {
-        throw std::runtime_error("Expected closing \" for list '" + name + "' but found: " + Current().Value);
+        std::unique_ptr<Expr> newEle = ParseExpression();
+        CheckType (type, newEle.get(), "List element");
+        CheckVarDecUsage(newEle.get(), targetVar);
+        elements.push_back(std::move(newEle));   // next element
     }
 
     Advance();   // move past "
 
+    return  std::make_unique<ListExpr>(std::move(elements), type);  // returns the expression created
 
-    std::unique_ptr<ListExpr> newListDecExpr = std::make_unique<ListExpr>(name, std::move(elements));
+}
 
-    std::unique_ptr<SymbolEntry> newEntry = std::make_unique<SymbolEntry>
-        (name, TokenType::List, SymbolKind::Variable, newListDecExpr.get(), TokenType::Public, nameToken.LineUsed);
-    currentScope->Insert(name, std::move(newEntry));
+// Only lists are allows to use dot functions, syntax is <ListName>.at[] or <ListName>.size()
+std::unique_ptr<Expr> Parser::ParseListDotFunction(std::string name, std::unique_ptr<Expr> listName)
+{
+    // This is infact not a dot function, so just return the identifier/attribute
+    if (Current().Type != TokenType::Dot){
+        return listName;
+    }
 
-    return newListDecExpr;       // returns the expression created
+    // Check if a list is calling a dot funciton
+    SymbolEntry* symbol = currentScope->LookUp(name);
+    VarDecExpr* vardec = dynamic_cast<VarDecExpr*>(symbol->Expression);
+    if (symbol->Type != TokenType::List || !vardec || !dynamic_cast<ListExpr*>(vardec->Value.get())){
+        throw std::runtime_error("This is not a list: " + name + " at around line: " + std::to_string(Current().LineUsed));   // Throws an error if its not a valid type    
+    }
+
+    Advance();      // Move on from the '.'
+    Token methodToken = Advance();      // Get method
+
+    if (methodToken.Value == "size"){
+        Advance(); Advance();      // Getting pass 2 symbols:'(' ')'
+        
+        return std::make_unique<ListSizeExpr>(std::move(listName), vardec);    
+    }
+
+    if (methodToken.Value == "at")
+    {
+        TokenType listType = dynamic_cast<ListExpr*>(vardec->Value.get())->Type;
+        Advance();  // '['
+        std::unique_ptr<Expr> index = ParseExpression();    // gets the value in between the brackets (the at value)
+
+        
+        TokenType type = GetExprType(index.get());
+        if(type != TokenType::Vnum && type != TokenType::VDigit) {
+            throw std::runtime_error("Not a valid position, expecting Vnum");
+        }
+        Advance();  // ']'
+
+        return std::make_unique<ListAtExpr>(std::move(listName), std::move(index), listType, vardec);
+    }
+
+    throw std::runtime_error("how did we get here: at line " + std::to_string(Current().LineUsed)); // TODO: maybe implement print with this?
 }
 
 
@@ -1241,6 +1241,7 @@ std::unique_ptr<AttReferenceExpr> Parser::ParseAttributeReference()
         return std::make_unique<AttReferenceExpr>(std::move(primaryName), std::move(attributeName), identifierSymbol->Type, identifierSymbol->Access);
     }
     
+    
     throw std::runtime_error(primarySymbol->Name + " object does not have attribute/function: " + identifierSymbol->Name + " at line " + std::to_string(Current().LineUsed));
 }
 
@@ -1248,6 +1249,12 @@ std::unique_ptr<AttReferenceExpr> Parser::ParseAttributeReference()
 std::unique_ptr<VarDecExpr> Parser::ParseAttributeDec(){ // Parses 'public Vnum self.x = ...'
     TokenType access = Advance().Type;          // public, private or protected
     TokenType varType = Advance().Type;         // Saves the type
+    
+    bool isList = false;
+    if (Current().Type == TokenType::Quote){
+        Advance();
+        isList = true;
+    }
     Token objToken = Advance();
     Advance();                                  // Move pass the arrow
     std::string varName = Advance().Value;        // Skipping over 'selfish' and -> to get the name 
@@ -1268,7 +1275,7 @@ std::unique_ptr<VarDecExpr> Parser::ParseAttributeDec(){ // Parses 'public Vnum 
     // Getting the expression for selfish -> ATTRIBUTE_NAME
     std::unique_ptr<AttReferenceExpr> Name = std::make_unique<AttReferenceExpr>(std::move(primaryNameExpr), std::move(attributeNameExpr), varType, access);
 
-    return CreateAndRegisterVarDec (varType, varName, std::move(Name), SymbolKind::Attribute, currentScope->GetParentClass(), access);
+    return CreateAndRegisterVarDec (varType, varName, std::move(Name), SymbolKind::Attribute, currentScope->GetParentClass(), isList, access);
 }
 
 // Follows grammer rule   <Methods> -> <FunctionDeclaration> | <FunctionDeclaration> <Methods>
@@ -1436,28 +1443,51 @@ std::unique_ptr<SayExpr> Parser::ParseSay(){
 // Record all the declartion of all the normal variables used.
 void Parser::CheckVarDecUsage (Expr* exprUsed, Expr* expr)
 {
-    if (!dynamic_cast<CheckUsage*>(expr)){
-        throw std::runtime_error("This is not a CheckUsage class at line " + std::to_string(Current().LineUsed));  // As per the production rules
+    CheckUsage* checkExpr = dynamic_cast<CheckUsage*>(expr);
+    if (!checkExpr){
+        return;
     }
 
-    // See if its the VarDecExpr->Value == IdentifierExpr
-    if (IdentifierExpr* valueIdExpr = dynamic_cast<IdentifierExpr*>(exprUsed)){
-        SymbolEntry* varValueSymbol = currentScope->LookUp(valueIdExpr->Name);
-        VarDecExpr* varDecExpr = dynamic_cast<VarDecExpr*>(varValueSymbol->Expression);
-        if (varDecExpr && varValueSymbol->SymK == SymbolKind::Variable){
-            dynamic_cast<CheckUsage*>(expr)->MarkUsed(varDecExpr);
-        }
+    if (IdentifierExpr* IdExpr = dynamic_cast<IdentifierExpr*>(exprUsed)){
+        Expr* Declaration = currentScope->LookUp(IdExpr->Name)->Expression;
+        CheckVarDecUsage(Declaration, expr);
+        return;
+    }
+
+    if (dynamic_cast<VarDecExpr*>(exprUsed)){
+        checkExpr->MarkUsed(exprUsed);
+        return;
     }
 
     // Check each expr to see if IdentifierExpr is used
     if (BinaryExpr* biExpr = dynamic_cast<BinaryExpr*>(exprUsed)){
         CheckVarDecUsage(biExpr->Left.get(), expr);
         CheckVarDecUsage(biExpr->Right.get(), expr);
+        return;
     }
 
     // All function call preserve the variable that calls it
     if (FunctionCallExpr* funcCall = dynamic_cast<FunctionCallExpr*>(exprUsed)) {
         currentScope->MarkUsed(expr);
+        return;
+    }
+
+    if (ListAtExpr* listAt = dynamic_cast<ListAtExpr*>(exprUsed)){
+        CheckVarDecUsage(listAt->Index.get(), expr);
+        CheckVarDecUsage(listAt->ListDecExpr, expr);
+        return;
+    }
+
+    if (ListSizeExpr* listSize = dynamic_cast<ListSizeExpr*>(exprUsed)){
+        CheckVarDecUsage(listSize->ListDecExpr, expr);
+        return;
+    }
+
+    if (AttReferenceExpr* attRef = dynamic_cast<AttReferenceExpr*>(exprUsed)){
+        if (VarDecExpr* attDec =  currentScope->LookUpClassAttribute(attRef)){
+            CheckVarDecUsage(attDec, expr);
+            return;
+        }
     }
 }
 

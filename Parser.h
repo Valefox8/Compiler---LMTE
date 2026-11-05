@@ -88,13 +88,13 @@ class Parser{
 
     // Variable declaration and its helper function
     std::unique_ptr<Expr> ParseGetValue(TokenType type);            // Get the value from a normal variable declaration
-    std::unique_ptr<VarDecExpr> CreateAndRegisterVarDec(TokenType varType, std::string varName, std::unique_ptr<Expr> nameExpr, SymbolKind kind, ScopeExpr* targetScope, TokenType access = TokenType::Public); 
+    std::unique_ptr<VarDecExpr> CreateAndRegisterVarDec(TokenType varType, std::string varName, std::unique_ptr<Expr> nameExpr, SymbolKind kind, ScopeExpr* targetScope, bool isList, TokenType access = TokenType::Public); 
         // Adding the new var dec into symbol table and other functions
     std::unique_ptr<VarDecExpr> ParseVarDec();     // Self explainitory by the name
 
     // List Declartion functions
-    std::unique_ptr<ListExpr> ParseList();         // also self explanitory by the name
-
+    std::unique_ptr<ListExpr> ParseListElements(TokenType varType, VarDecExpr* targetVar);         // also self explanitory by the name
+    std::unique_ptr<Expr> ParseListDotFunction(std::string name, std::unique_ptr<Expr> listName);
 
     // Scope helper functions
     std::vector<std::unique_ptr<Expr>> ParseBlock();               // Reads a whole ': statements ;' scope

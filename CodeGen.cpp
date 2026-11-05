@@ -196,15 +196,7 @@ std::string CodeGen::GenCode(Expr* expr){
     // Creating the list
     if(ListExpr* list = dynamic_cast<ListExpr*>(expr)){
 
-        std::string result;
-
-        // Grabs the name and the strat of the python list syntax
-        if (list->Name == "anotherone")
-        {
-            result += "[";
-        } else {
-            result += list->Name + " = [";
-        }
+        std::string result =  "[";
 
         // For each element in the elements vector, create a new python list entry 
         for(size_t i = 0; i < list->Elements.size(); i++){
@@ -222,13 +214,13 @@ std::string CodeGen::GenCode(Expr* expr){
 
     if (ListAtExpr* at = dynamic_cast<ListAtExpr*>(expr))
     {
-        return at->ListName + "[" + GenCode(at->Index.get()) + "]";     // returns name[index]
+        return GenCode(at->ListName.get()) + "[" + GenCode(at->Index.get()) + "]";     // returns name[index]
     }
 
     // Length of a list
     if (ListSizeExpr* size = dynamic_cast<ListSizeExpr*>(expr))
     {
-        return "len(" + size->ListName + ")";   // returns len(name)
+        return "len(" + GenCode(size->ListName.get()) + ")";   // returns len(name)
     }
     
     // Funciton/Method Declaration

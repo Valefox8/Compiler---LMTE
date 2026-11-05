@@ -62,6 +62,7 @@ class CheckUsage
 class ClassDecExpr;
 class ParameterExpr;
 class AttReferenceExpr;
+class VarDecExpr;
 
 
 // Scope defined to use the syntax table
@@ -81,6 +82,7 @@ class ScopeExpr : public Expr, public CheckUsage {
         bool Contain (const std::string& varName);
         bool ContainLocal (const std::string& varName);
         SymbolEntry* LookUp(const std::string& varName);
+        VarDecExpr* LookUpClassAttribute(AttReferenceExpr*);
         void Insert(const std::string& varName, std::unique_ptr<SymbolEntry> entry);
         ClassDecExpr* GetParentClass();
         std::string GetNames();
@@ -196,20 +198,15 @@ class VarDecExpr : public Expr, public CheckUsage {
         TokenType VarType;              // Vnum, Vwords, Vboolean, Vletter, etc.
         std::unique_ptr<Expr> Name;               // the variable's identifier
         std::unique_ptr<Expr> Value;    // whatever is assigned - a NumberExpr, BinaryExpr, or a literal
-        bool IsAttribute;
 
         // Var dec expression constructor
          VarDecExpr(
             TokenType varType, 
-            std::unique_ptr<Expr> name, 
-            std::unique_ptr<Expr> value,
-            bool isAttribute = false
+            std::unique_ptr<Expr> name
         )   
         {
             VarType = varType;
             Name = std::move(name);
-            Value = std::move(value);
-            IsAttribute = isAttribute;
         }
 
 };
@@ -218,36 +215,40 @@ class VarDecExpr : public Expr, public CheckUsage {
 // List expression function
 class ListExpr : public Expr{
     public:
-        std::string Name;
         std::vector<std::unique_ptr<Expr>> Elements;
+        TokenType Type;
 
-        ListExpr(std::string name, std::vector<std::unique_ptr<Expr>> elements){
-            Name = name;
+        ListExpr(std::vector<std::unique_ptr<Expr>> elements, TokenType type){
             Elements = std::move(elements);
+            Type = type;
         }
 };
 
-class ListAtExpr : public Expr{
+class ListAtExpr : public Expr, public CheckUsage {
     public:
-        std::string ListName;
+        std::unique_ptr<Expr> ListName;
         std::unique_ptr<Expr> Index;
         TokenType ElementType;
+        VarDecExpr* ListDecExpr;
 
-        ListAtExpr(std::string listName, std::unique_ptr<Expr> index, TokenType elementType)
+        ListAtExpr(std::unique_ptr<Expr> listName, std::unique_ptr<Expr> index, TokenType elementType, VarDecExpr* listDecExpr)
         {
-            ListName = listName;
+            ListName = std::move(listName);
             Index = std::move(index);
             ElementType = elementType;
+            ListDecExpr = listDecExpr;
         }
 };
 
-class ListSizeExpr : public Expr{
+class ListSizeExpr : public Expr, public CheckUsage {
     public:
-    std::string ListName;
+    std::unique_ptr<Expr> ListName;
+    VarDecExpr* ListDecExpr;
 
-    ListSizeExpr(std::string listName)
+    ListSizeExpr(std::unique_ptr<Expr> listName, VarDecExpr* listDecExpr)
     {
-        ListName = listName;
+        ListName = std::move(listName);
+        ListDecExpr = listDecExpr;
     }
 };
 

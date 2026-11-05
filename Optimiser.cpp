@@ -70,6 +70,8 @@ void Optimiser::Sweep(ScopeExpr& currentScope)
         ScopeExpr* innerScope = dynamic_cast<ScopeExpr*>(raw);
         if (innerScope)
         {
+
+            // Delete all unused scopes
             if (!reachable.count(innerScope))
             {
                 continue;

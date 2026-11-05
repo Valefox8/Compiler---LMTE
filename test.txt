@@ -55,7 +55,7 @@ guessnot:
 say($pass variable declaration test$)
 
 <!-- Test List -->
-"testList | 1 | 2 | 1 add 2"
+Vnum "testList | 1 | 2 | 1 add 2"
 iguessif(testList.size() equal 3):
     say($Pass List size test$)
 ;
@@ -77,15 +77,17 @@ guessnot:
     say($Fail List at with operation test$)
 ;
 
-"testMixedList | 1 | #L# | $Words$"
 
-iguessif(testMixedList.at[1] equal #L#):
+VDigit positionOne = 1
+Vwords "testListAt | $1$ | $L$ | $Words$"
+
+iguessif(testListAt.at[positionOne] equal $L$):
     say($Pass Mixed List at test1$)
 ;
 guessnot:
     say($Fail Mixed List at test1$)
 ;
-iguessif(testMixedList.at[2] equal $Words$):
+iguessif(testListAt.at[positionOne add 1] equal $Words$):
     say($Pass Mixed List at test2$)
 ;
 guessnot:
@@ -222,6 +224,8 @@ CTestClassC:
         FUNCTION SELF Vnum fixedNumber:
             public Vnum selfish -> fixedNumber = fixedNumber
             private Vnum selfish -> innerNumber = 10
+            protected Vnum "selfish -> list | 1 | 2 | 3"
+            say selfish -> list
         ;
 
         FUNCTION Vnum Adding Vnum num1:

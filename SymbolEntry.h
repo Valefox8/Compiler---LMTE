@@ -22,6 +22,7 @@ enum class SymbolKind
     Method,
     Class,
     Parameter,
+    List,
 };
 
 
