@@ -607,6 +607,14 @@ Program 2 covers extended functionality including but classes, objects and inher
 Each section prints "== heading ==" to make it clear where the output begins for the 
 code.
 
+### Steps to Run Test Programs
+1. Build compiler with 
+g++ -std=c++17 main.cpp Lexer.cpp Parser.cpp Expr.cpp CodeGen.cpp Optimiser.cpp -o lmte
+2. Place the test program in test.txt (only the lines between ```)
+3. Compile with .\lmte.exe
+4. Run python python.py
+5. Observe output in terminal, should match expected output
+
 ### Test Program 1: Core language
 ```
 <!-- Test Program 1: core language features -->
@@ -820,4 +828,157 @@ Enter a whole number:
 4
 Factorial:
 24
+```
+
+### Test Program 2: Classes, Objects and Inheritance
+
+```
+<!-- Test Program 2: classes, objects and inheritance -->
+
+<!-- Base class: constructor, attributes and all three access levels -->
+CAnimalC:
+    FUNCTION SELF Vwords name | Vnum legs:
+        public Vwords selfish -> name = name
+        public Vnum selfish -> legs = legs
+        protected Vnum selfish -> energy = 10
+        private Vnum selfish -> secret = 42
+    ;
+
+    private:
+        FUNCTION Vnum hiddenNumber:
+            leave selfish -> secret
+        ;
+    ;
+
+    protected:
+        FUNCTION Vnum boost:
+            leave 5
+        ;
+    ;
+
+    public:
+        FUNCTION Vwords speak:
+            leave $Some generic animal noise$
+        ;
+
+        FUNCTION introduce:
+            say $I am $ add selfish -> name
+        ;
+
+        FUNCTION Vnum rest Vnum hours:
+            selfish -> energy = selfish -> energy add hours
+            leave selfish -> energy
+        ;
+
+        <!-- Public method that uses a private method -->
+        FUNCTION Vnum revealSecret:
+            leave selfish -> f hiddenNumber
+        ;
+
+        <!-- Never called on any object so it gets dropped -->
+        FUNCTION Vnum unusedTrick:
+            leave 0
+        ;
+    ;
+;
+
+<!-- Child class: must have a constructor that runs the parent's one first -->
+CDogC: WithTheClassic CAnimalC:
+    FUNCTION SELF Vwords name: TAKEOVER CAnimalC -> f SELF name | 4:
+        public Vwords selfish -> trick = $roll over$
+    ;
+
+    public:
+        <!-- The parent's speak does not run -->
+        FUNCTION Vwords speak: TAKEOVER:
+            leave $Woof$
+        ;
+
+        <!-- The parent's introduce runs first, then the child's extra line -->
+        FUNCTION introduce: TAKEOVER CAnimalC -> f introduce:
+            say $and I can $ add selfish -> trick
+        ;
+
+        <!-- Runs the parent's rest, then uses a protected attribute and method -->
+        FUNCTION Vnum rest Vnum hours: TAKEOVER CAnimalC -> f rest hours:
+            selfish -> energy = selfish -> energy add selfish -> f boost
+            leave selfish -> energy
+        ;
+    ;
+;
+
+<!-- Multi-level inheritance: CPuppyC -> CDogC -> CAnimalC -->
+CPuppyC: WithTheClassic CDogC:
+    FUNCTION SELF Vwords name: TAKEOVER CDogC -> f SELF name:
+    ;
+
+    public:
+        FUNCTION Vwords speak: TAKEOVER:
+            leave $Yip$
+        ;
+    ;
+;
+
+<!-- Objects -->
+CAnimalC cat = CAnimalC $Tom$ | 4
+CDogC rex = CDogC $Rex$
+CPuppyC pip = CPuppyC $Pip$
+
+say $== Attributes ==$
+say cat -> name
+say rex -> name
+say rex -> legs
+say rex -> trick
+
+say $== Overriding ==$
+say cat -> f speak
+say rex -> f speak
+say pip -> f speak
+rex -> f introduce
+pip -> f introduce
+
+say $== Methods and access levels ==$
+say cat -> f rest 2
+say rex -> f rest 2
+say pip -> f revealSecret
+
+<!-- Objects working with variables, loops and conditions -->
+say $== Objects in a loop ==$
+Vnum dogEnergy = rex -> f rest 0
+forwhencake:
+    iguessif(dogEnergy moreThan 30):
+        handbrake
+    ;
+    dogEnergy = rex -> f rest 1
+;
+say dogEnergy
+
+<!-- Changing a public attribute from outside the class -->
+rex -> name = $Rexy$
+say rex -> name
+```
+
+**Expected output:**
+
+```
+== Attributes ==
+Tom
+Rex
+4
+roll over
+== Overriding ==
+Some generic animal noise
+Woof
+Yip
+I am Rex
+and I can roll over
+I am Pip
+and I can roll over
+== Methods and access levels ==
+12
+17
+42
+== Objects in a loop ==
+34
+Rexy
 ```
